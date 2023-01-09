@@ -4,13 +4,19 @@
 #include <cmath>
 #include <boost/math/constants/constants.hpp>
 
-#define DEBUG_MODE 0
-#define PROPOSED_METHOD 1
-#define PCSBM 1
+/*
+
+2023/01/05 : //* means liu_code exist
+
+*/
+
+#define DEBUG_MODE 1
+#define PROPOSED_METHOD 0
+#define PCSBM 1 // can change
 
 
 const double PI = boost::math::constants::pi<double>();
-const double room_size = 16;
+const double room_size = 24;
 const double time_period = 0.5; // sec
 const int state_num = 1000;
 
@@ -21,7 +27,7 @@ const int state_num = 1000;
 const int RF_AP_num = 1;
 const int RF_AP_height = 5; // m
 const int RF_AP_bandwidth = 10; //MHz
-const int RF_AP_subchannel = 32; // number of subchannel
+const int RF_AP_subchannel = 32; // number of sub channel
 
 /*
     VLC AP
@@ -29,21 +35,21 @@ const int RF_AP_subchannel = 32; // number of subchannel
 const int VLC_AP_num = 36;
 const int VLC_AP_per_row = 6;
 const int VLC_AP_height = 5;
-//*const int VLC_AP_power = 9; //optical transmit power in lifi system (w)
+const int VLC_AP_power = 4; //*-*-TEMP*-*-! transmitted optical power of a LiFi AP(P_tx , unit:W) , indicates the allocated transmit electrical power on the nth subchannel of the cth VLC AP (P^VLC_n,c , ?)
 const int VLC_AP_bandwidth = 20; // MHz
-const int VLC_AP_subchannel = 16;
+const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
 const double noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
-//*const double conversion_efficiency = 0.53; // optical to electrical conversion efficiency
-//*const double optical_to_electric_power_ratio = 3.0; // κ
+const double conversion_efficiency = 0.5; // optical to electrical conversion efficiency (τ) , PD’s responsivity (μ)
+//* const double optical_to_electric_power_ratio = 3.0; // κ
 
 // these values are found in "Resource Allocation in LiFi OFDMA Systems"
-//*const int subcarrier_num = 40; // M = 64
-//*const int effective_subcarrier_num = subcarrier_num / 2 - 1; // M_e = M/2 - 1
-//*const int time_slot_num = 32; // K = 20
+//* const int subcarrier_num = 40; // M = 64
+//* const int effective_subcarrier_num = subcarrier_num / 2 - 1; // M_e = M/2 - 1
+//* const int time_slot_num = 32; // K = 20
 
 
 /*
-    UE
+    UE : not change yet
 */
 const int UE_num = 150;
 const int demand_upper_bound = 100;
@@ -55,66 +61,72 @@ const double pause_time = 0.0;
     VLC channel
 */
 const double field_of_view = 90.0; // degree
-//*const double PHI_half = 60.0; // semi-angle at half-illumination in degree
+const double PHI_half = 60.0; // semi-angle at half-illumination in degree
 const double filter_gain = 1.0;
 const double refractive_index = 1.5;
 const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
-//*const double reflection_efficiency = 0.75;
-//*const double fitting_coefficient = 2.88;
-//*const double three_dB_cutoff = 30; // MHz
+//* const double reflection_efficiency = 0.75;
 
 /*
-    handover
+    2023/01/09 : benchmark don't have this !
 */
-//*const double VHO_efficiency = 0.6;
-//*const double HHO_efficiency = 0.9;
+const double fitting_coefficient = 2.88;
+const double three_dB_cutoff = 30; // MHz
+
+/*
+    handover : benchmark don't have handover
+*/
+//* const double VHO_efficiency = 0.6;
+//* const double HHO_efficiency = 0.9;
 
 
 /*
     RF channel
 */
-//*const int max_backoff_stage = 1024;
-//*const double channel_bit_rate = 1732.0 * 5;
-//*const double RTS_time = 160.0; // µs
-//*const double CTS_time = 140.0; // µs
-//*const double header_time = 230.0; // µs
-//*const double ACK_time = 140.0; // µs
-//*const double SIFS_time = 28.0; // µs
-//*const double PIFS_time = 80.0; // µs
-//*const double DIFS_time = 128.0; // µs
-//*const double slot_time = 52.0; // It is not given in benchmark paper. I infer this value by PIFS = SIFS + slot time based on ieee 802.11.
-//*const double propagation_delay = 1000.0; // µs
-//*const double utilization_ratio = 2.0; // ε
+//* const int max_backoff_stage = 1024;
+//* const double channel_bit_rate = 1732.0 * 5;
+//* const double RTS_time = 160.0; // µs
+//* const double CTS_time = 140.0; // µs
+//* const double header_time = 230.0; // µs
+//* const double ACK_time = 140.0; // µs
+//* const double SIFS_time = 28.0; // µs
+//* const double PIFS_time = 80.0; // µs
+//* const double DIFS_time = 128.0; // µs
+//* const double slot_time = 52.0; // It is not given in benchmark paper. I infer this value by PIFS = SIFS + slot time based on ieee 802.11.
+//* const double propagation_delay = 1000.0; // µs
+//* const double utilization_ratio = 2.0; // ε
+const double carrier_frequency = 2.4; // GHz
+
 
 /*
     random orientation angle
 */
-//*const double coherence_time = 130.0; // ms
-//*const double sampling_time = 13.0; // ms
-//*const double angle_mean = 30.0; // degree
-//*const double angle_variance = 7.78; // degree
-//*const double c_1 = pow(0.05, sampling_time/coherence_time);
-//*const double c_0 = (1.0 - c_1) * angle_mean;
-//*const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
+//* const double coherence_time = 130.0; // ms
+//* const double sampling_time = 13.0; // ms
+//* const double angle_mean = 30.0; // degree
+//* const double angle_variance = 7.78; // degree
+//* const double c_1 = pow(0.05, sampling_time/coherence_time);
+//* const double c_0 = (1.0 - c_1) * angle_mean;
+//* const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
 
 
 /*
     utility function
 */
-//*const double beta = 1.0; // fairness coefficient
+//* const double beta = 1.0; // fairness coefficient
 
 
 /*
     parameters related to demand discounting ratio
 */
-//*const double initial_discount = 0.8;
-//*const double delta_p = 0.05;
-//*const double expel_ratio = 0.5;
+//* const double initial_discount = 0.8;
+//* const double delta_p = 0.05;
+//* const double expel_ratio = 0.5;
 
 
 /*
     the period of PCSBM (in states)
 */
-//*const int complete_config_period = state_num;
+//* const int complete_config_period = state_num;
 
 #endif // GLOBAL_CONFIGURATION_H

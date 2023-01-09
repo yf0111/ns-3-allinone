@@ -15,6 +15,8 @@
 using namespace ns3;
 
 // w[n] is a white noise process, which is a random process of random variables that are uncorrelated, have mean zero, and a finite variance
+// random orientation (Orientation based RWP mobility model) : generator is angle random generator
+
 MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate)
     : generator(std::chrono::system_clock::now().time_since_epoch().count()), distribution(0.0, sqrt(noise_variance))
     {
@@ -28,6 +30,8 @@ MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate)
         curr_associated_AP = -1;
         RU_block.clear();
     }
+
+
 
 int MyUeNode::getID(void) {
     return node_ID;
@@ -161,23 +165,42 @@ void MyUeNode::randomOrientationAngle(Ptr<Node> UE) {
 }
 
 
+// RU block : vector
+// RuRangeType : std::pair<std::pair<int,int>, std::pair<int,int>> ( <start,end> )
 
+/*
+    2023/01/09 : benchmark resource allocation is sub channel? -> turn Resource Unit into sub channel
+    sub channel : vector
+    typedef std::pair<int,int> RuType; // <sub channel index , time>
+*/
+
+
+/*
 void MyUeNode::recordResourceUnit(std::pair<int,int> start, std::pair<int,int> tail) {
     RU_block.emplace_back(start, tail);
+}*/
+
+void MyUeNode::recordResourceUnit(RuType newRu){
+    RU_block.emplace_back(newRu);
 }
 
-void MyUeNode::updateNthResourceUnitBlock(int n, RuRangeType new_RU) {
+
+void MyUeNode::updateNthResourceUnitBlock(int n, RuType new_RU) {
     if (n < RU_block.size())
         RU_block[n] = new_RU;
     else
         std::cout << "Access to RU_block vector is out of bound\n";
 }
 
-int MyUeNode::getRuBlockSize(void) {
-    return RU_block.size();
-}
-
+/*
 RuRangeType MyUeNode::getNthResourceUnitBlock(int n) {
+    if (n < RU_block.size())
+        return RU_block[n];
+    else
+        std::cout << "Access to RU_block vector is out of bound\n";
+}*/
+
+RuType MyUeNode::getNthResourceUnitBlock(int n) {
     if (n < RU_block.size())
         return RU_block[n];
     else
@@ -196,17 +219,30 @@ void MyUeNode::removeLastResourceUnitBlock(void) {
     RU_block.pop_back();
 }
 
+int MyUeNode::getRuBlockSize(void) {
+    return RU_block.size();
+}
+
 void MyUeNode::clearRuBlock(void) {
     RU_block.clear();
 }
 
+/*
 std::vector<RuRangeType> MyUeNode::getWholeRuBlock(void) {
     if (!RU_block.empty())
         return RU_block;
 
     return std::vector<RuRangeType> ();
+}*/
+
+std::vector<RuType> MyUeNode::getWholeRuBlock(void) {
+    if (!RU_block.empty())
+        return RU_block;
+
+    return std::vector<RuType> ();
 }
 
+/* No need?
 void MyUeNode::arrangeRuBlock(Order order) {
     if (!RU_block.empty()) {
         if (order == high_to_low) {
@@ -218,7 +254,7 @@ void MyUeNode::arrangeRuBlock(Order order) {
                   [](RuRangeType &a, RuRangeType& b){ return ((a.first.first < b.first.first) || (a.first.first == b.first.first && a.first.second < b.first.second)); });
         }
     }
-}
+}*/
 
 
 

@@ -11,9 +11,10 @@
 
 using namespace ns3;
 
-typedef std::pair<std::pair<int,int>, std::pair<int,int>> RuRangeType;
+//* typedef std::pair<std::pair<int,int>, std::pair<int,int>> RuRangeType;
+typedef std::pair<int,int> RuType; // <sub channel index , time>
 
-enum Order {high_to_low, low_to_high};
+enum Order {high_to_low, low_to_high}; //?
 
 class MyUeNode
 {
@@ -29,8 +30,8 @@ public:
     void setRequiredDataRate(double data_rate_in_Mbps);
     double getRequiredDataRate(void);
 
-    void setCurrAssociatedAP(int associated_AP_index);
-    void changeCurrAssociatedAP(int associated_AP_index);
+    void setCurrAssociatedAP(int associated_AP_index); // diff?
+    void changeCurrAssociatedAP(int associated_AP_index); // diff?
     int getCurrAssociatedAP(void);
     int getPrevAssociatedAP(void);
 
@@ -48,15 +49,18 @@ public:
     double getAzimuthAngle(void);
     void randomOrientationAngle(Ptr<Node> UE);
 
-    void recordResourceUnit(std::pair<int,int> start, std::pair<int,int> tail);
-    void updateNthResourceUnitBlock(int n, RuRangeType new_RU);
-    RuRangeType getNthResourceUnitBlock(int n);
+    // 2023/01/09 : NEED CHANGE !
+    void recordResourceUnit(std::pair<int,int> newRu);
+    //* void updateNthResourceUnitBlock(int n, RuRangeType new_RU);
+    void updateNthResourceUnitBlock(int n,RuType new_Ru);
+    //* RuRangeType getNthResourceUnitBlock(int n);
+    RuType getNthResourceUnitBlock(int n);
     void removeNthResourceUnitBlock(int n);
     void removeLastResourceUnitBlock(void);
     int getRuBlockSize(void);
     void clearRuBlock(void);
     std::vector<RuRangeType> getWholeRuBlock(void);
-    void arrangeRuBlock(Order order);
+    //* void arrangeRuBlock(Order order);
 
 
 private:
@@ -76,7 +80,9 @@ private:
 
     // a vector of positions that record start and end of used RU by this UE
     // of the form <<subcarrier start, time slot start>, <subcarrier end, time slot end>>
-    std::vector<RuRangeType> RU_block;
+    //* std::vector<RuRangeType> RU_block;
+
+    std::vector<RuType> RU_block;
 
     void setPolarAngle(double new_polar_angle);
     void setAzimuthAngle(double new_azimuth_angle);

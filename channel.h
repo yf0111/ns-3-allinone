@@ -22,6 +22,7 @@ void precalculation(NodeContainer &RF_AP_node ,
                       NodeContainer &UE_nodes,
                       std::vector<std::vector<double>> &VLC_LOS_matrix,
                       std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix,
+                      std::vector<double> &RF_channel_gain_vector,
                       std::vector<double> &RF_data_rate_vector,
                       std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix,
                       std::vector<MyUeNode> &my_UE_list);
@@ -50,14 +51,20 @@ double estimateOneVlcFrontEnd(int subcarrier_index);
 
 
 /*
-    data rate
+    VLC data rate
 */
-// VLC
 void calculateAllVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix);
 double estimateOneVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, int VLC_AP_index, int UE_index, int subcarrier_index);
-double getSpectralEfficiency(double SINR);
+//* double getSpectralEfficiency(double SINR);
 
-// RF
+/*
+    RF channel gain !*-*-NEW*-*-!
+*/
+void calculateRFChannelGain(std::vector<double> &RF_channel_gain_vector);
+
+/*
+    RF data rate
+*/
 void calculateRfDataRate(std::vector<double> &RF_data_rate_vector);
 double calculateRfDownlinkUtilizationEfficiency(int serving_UE_num);
 double calculateRfSystemUtilization(int serving_UE_num);

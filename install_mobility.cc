@@ -3,6 +3,8 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <cstdlib>
+#include <time.h>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -34,21 +36,23 @@ void installRfApMobility(NodeContainer &RF_AP_node) {
 
 
 /*
-    install the mobility of VLC AP
+    install the mobility of VLC AP  : 6x6
 
-                     ^
-       *(12)   *(13) |   *(14)   *(15)
-       *(8)    *(9)  |   *(10)   *(11)
+                         ^
+        *(30) *(31) *(32)| *(33) *(34) *(35)
+        *(24) *(25) *(26)| *(27) *(28) *(29)
+        *(18) *(19) *(20)| *(21) *(22) *(23)
      ------------------------------------>
-        *(4)    *(5) |   *(6)    *(7)
-        *(0)    *(1) |   *(2)    *(3)
+        *(12) *(13) *(14)| *(15) *(16) *(17)
+        *(6)  *(7)  *(8) | *(9)  *(10) *(11)
+        *(0)  *(1)  *(2) | *(3)  *(4)  *(5)
 
 */
 void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     MobilityHelper VLC_AP_mobility;
     Ptr<ListPositionAllocator> VLC_AP_pos_list = CreateObject<ListPositionAllocator>();
 
-    double delta = room_size / VLC_AP_per_row;
+    double delta = room_size / VLC_AP_per_row; // 24/6
     for (int i = 0; i < VLC_AP_num; i++) {
         double x = (i%VLC_AP_per_row + 1) * delta;
         double y = (i/VLC_AP_per_row + 1) * delta;
@@ -70,6 +74,8 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
 
 /*
     install the mobility of UE - orientation-based RWP
+    2023/01/09 : benchmark does not mention about device orientation , and UE no need to move
+
 */
 void installUeMobility(NodeContainer &UE_nodes) {
     SeedManager::SetSeed(time(NULL));
@@ -83,14 +89,23 @@ void installUeMobility(NodeContainer &UE_nodes) {
     std::stringstream ssPos;
     ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
 
+    // choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
+    srand (time(NULL));
+    String arr[4] = {"0.5","1","1.5","1"};
+    int random_index = rand()%4;
+    String z = arr[random_index];
+
     // set an attribute to be set during construction
     pos.Set("X", StringValue(ssPos.str()));
     pos.Set("Y", StringValue(ssPos.str()));
-    pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=1.5]"));
+    //* pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=1.5]"));
+    pos.Set("Z",StringValue(z));
 
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
     UE_mobility.SetPositionAllocator(position_allocator);
 
+/* //*
+    2023/01/09 : RWP
 
     // set mobility model
     // - the random variable for user speed
@@ -105,7 +120,8 @@ void installUeMobility(NodeContainer &UE_nodes) {
                                   "Speed", StringValue(ss_speed.str()),
                                   "Pause", StringValue(ss_pause.str()),
                                   "PositionAllocator", PointerValue(position_allocator));
-
+*/
+    UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     UE_mobility.Install(UE_nodes);
 }
 
