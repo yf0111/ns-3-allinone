@@ -2,6 +2,9 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+#include <chrono>
+#include <cmath>
+#include <fstream>
 
 #include "channel.h"
 #include "print.h"
@@ -17,6 +20,7 @@ static const double concentrator_gain = pow(refractive_index, 2) / pow(sin(degre
 
 
 void precalculation(NodeContainer  &RF_AP_node, // !*-*-TODO*-*-! change!
+
                       NodeContainer  &VLC_AP_nodes,
                       NodeContainer  &UE_nodes,
                       std::vector<std::vector<double>> &VLC_LOS_matrix,
@@ -26,8 +30,7 @@ void precalculation(NodeContainer  &RF_AP_node, // !*-*-TODO*-*-! change!
                       std::vector<double> &RF_channel_gain_vector,
                       std::vector<double> &RF_SINR_vector,
                       std::vector<double> &RF_data_rate_vector,
-                      std::vector<MyUeNode> &my_UE_list)
-{
+                      std::vector<MyUeNode> &my_UE_list){
     calculateAllVlcLightOfSight(VLC_AP_nodes, UE_nodes, my_UE_list, VLC_LOS_matrix);
     calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix);
     calculateAllVlcDataRate(VLC_SINR_matrix, VLC_data_rate_matrix);
@@ -219,15 +222,10 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std:
             //* interference += pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index] * front_end_vector[subcarrier_index], 2);
             interference += pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index],2);
     }
-    double VLC_AP_sub_bandwidth = VLC_AP_bandwidth / VLC_sub_channel // B^VLC_sub = B^VLC / N^VLC = VLC_AP_bandwidth / VLC_sub_channel
-    double noise = VLC_AP_sub_bandwidth * VLC_noise_power_spectral_density;
+    //1//double VLC_AP_sub_bandwidth = VLC_AP_bandwidth / VLC_sub_channel // B^VLC_sub = B^VLC / N^VLC = VLC_AP_bandwidth / VLC_sub_channel
+    double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
     //* double SINR = pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index] * front_end_vector[subcarrier_index], 2) / (interference + noise);
     double SINR = pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
-    /*
-        2023/01/09 : why need to change to logarithmic SINR?
-    */
-    // change to logarithmic SINR
-    //* return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
     return SINR;
 }
 
@@ -282,16 +280,43 @@ double estimateOneVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC
 */
 void calculateRFChannelGain(NodeContainer &RF_AP_node,NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<double> &RF_channel_gain_vector){
 	for(int i = 0;i<UE_num;i++){
-        RF_channel_gain_vector[i] = estimateOneRFLightOfSight(RF_AP_node.Get(i), UE_nodes.Get(j), my_UE_list[j]); //!*-*-NOTICE*-*- : NLOS?
+        RF_channel_gain_vector[i] = estimateOneRFChannelGain(RF_AP_node.Get(i), UE_nodes.Get(j), my_UE_list[j]); //!*-*-NOTICE*-*- : NLOS?
 	}
 }
-double estimateOneRFLightOfSight(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
+double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
 
-    const double distance = getDistance(RF_AP, UE_node);
-
+    /*
+    //1//
+    double distance = getDistance(RF_AP, UE_node);
     double path_loss = 18.7*log10(distance) + 46.8 + 20*log10(carrier_frequency/5);
     double path_loss_power = -(path_loss)/10;
     double rf_los_channel_gain = pow(10,path_loss_power);
+    return rf_los_channel_gain;
+    */
+
+    //2//
+    double distance = getDistance(RF_AP,UE_node);
+    std::normal_distribution<double> Gaussian (0.0,10);    //normal distribution 即 Gaussian distribution
+    boost::math::rayleigh_distribution<double> rayleigh(0.8); // standard rayleigh distribution
+    std::uniform_real_distribution<double> random_p(0.0, 1.0);// uniform random variable between 0.0 and 1.0 for inverse transform sampling
+    std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
+    double X=0.0,H=0.0,p;
+    for(int i=0;i<100000;i++){
+        X+= Gaussian(gen);
+        p = random_p(gen);
+        H+= quantile(rayleigh,p);
+    }
+    X/=100000;
+    H/=100000;
+
+    double L_d;
+    if(distance < breakpoint_distance){
+        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5;
+    }
+    else{
+        L_d = 20 * log10(RF_carrier_frequency*pow(distance,2.75)/pow(breakpoint_distance,1.75)) - 147.5;
+    }
+    double rf_los_channel_gain = pow(H,2) * pow(10,((-1)*L_d+X)/10.0);
     return rf_los_channel_gain;
 }
 
@@ -308,8 +333,16 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector, int UE_ind
     /*
         !*-*-NOTICE*-*-! : this RF SINR not take M (adjacent industrial factory) and I^RF,U_k,n (interference from competing technologies)into account yet !
     */
+    /*
+    //1//
     double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
     double denominator = RF_noise_power_spectral_density*(RF_AP_bandwidth / RF_AP_subchannel);
+    double SINR = numerator / denominator;
+    return SINR;
+    */
+
+    double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
+    double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
     double SINR = numerator / denominator;
     return SINR;
 }

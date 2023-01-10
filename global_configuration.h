@@ -7,7 +7,9 @@
 /*
 
 2023/01/05 : //* means liu_code exist
-
+2023/01/10 :
+    //1// means that this func.(var.) is used for reference : Learning-Based Energy-Efficient Resource Management by Heterogeneous RF/VLC for Ultra-Reliable Low-Latency Industrial IoT Networks
+    //2// means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi-WiFi network using a novel Link Aggregation Framework
 */
 
 #define DEBUG_MODE 1
@@ -16,33 +18,36 @@
 
 
 const double PI = boost::math::constants::pi<double>();
-const double room_size = 24;
-const double time_period = 0.5; // sec
-const int state_num = 1000;
+const double room_size = 5;
+//* const double time_period = 0.5; // sec
+//* const int state_num = 1000;
 
 
 /*
     RF AP
 */
 const int RF_AP_num = 1;
-const int RF_AP_height = 5; // m
-const int RF_AP_bandwidth = 10; //MHz
+const int RF_AP_height = 3; // m
+const int RF_AP_bandwidth = 20; //MHz
 const int RF_AP_subchannel = 32; // number of sub channel
-const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
-const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
+//1//const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
+const double RF_AP_power = 20; // dBm
+//1//const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
+const double RF_noise_power_spectral_density = -75; // dBm/MHz
+
 
 /*
     VLC AP
 */
-const int VLC_AP_num = 36;
-const int VLC_AP_per_row = 6;
-const int VLC_AP_height = 5;
-const int VLC_AP_power = 4; //*-*-TEMP*-*-! transmitted optical power of a LiFi AP(P_tx , unit:W) , indicates the allocated transmit electrical power on the nth subchannel of the cth VLC AP (P^VLC_n,c , ?)
-const int VLC_AP_bandwidth = 20; // MHz
+const int VLC_AP_num = 4;
+const int VLC_AP_per_row = 2;
+const int VLC_AP_height = 3;
+const int VLC_AP_power = 3; //*-*-TEMP*-*-! transmitted optical power of a LiFi AP(P_tx , unit:W) , indicates the allocated transmit electrical power on the nth subchannel of the cth VLC AP (P^VLC_n,c , ?)
+const int VLC_AP_bandwidth = 40; // MHz
 const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
-const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
-const double conversion_efficiency = 0.5; // optical to electrical conversion efficiency (τ) , PD’s responsivity (μ)
-//* const double optical_to_electric_power_ratio = 3.0; // κ
+//1//const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
+const double VLC_noise_power_spectral_density = -210; // dBm/MHz
+const double conversion_efficiency = 0.53; // A/W  optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 // these values are found in "Resource Allocation in LiFi OFDMA Systems"
 //* const int subcarrier_num = 40; // M = 64
@@ -70,16 +75,16 @@ const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
 //* const double reflection_efficiency = 0.75;
 
 /*
+    RF Channel
+*/
+const double RF_carrier_frequency = 2.4; // GHz !*-*-NOICE*-*-! : USE where?
+const int breakpoint_distance = 5; //m
+
+/*
     2023/01/09 : benchmark don't have this !
 */
 //* const double fitting_coefficient = 2.88;
 //* const double three_dB_cutoff = 30; // MHz
-
-
-/*
-    RF channel
-*/
-const double RF_carrier_frequency = 2.4; // GHz !*-*-NOICE*-*-! : USE where?
 
 /*
     random orientation angle

@@ -12,9 +12,9 @@
 using namespace ns3;
 
 //* typedef std::pair<std::pair<int,int>, std::pair<int,int>> RuRangeType;
-typedef std::pair<int,int> RuType; // <sub channel index , time>
+// typedef std::pair<int,int> RuType; // <sub channel index , time>
 
-enum Order {high_to_low, low_to_high}; //?
+//* enum Order {high_to_low, low_to_high}; //?
 
 class MyUeNode
 {

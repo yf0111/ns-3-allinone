@@ -33,9 +33,6 @@ void precalculation(NodeContainer &RF_AP_node ,
 */
 double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &UE_nodes, std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &VLC_LOS_matrix);
 double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node);
-/*
-    distance and angle calculation
-*/
 double getIrradianceAngle(Ptr<Node> AP, MyUeNode & UE_node); // in radians
 double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node);
 double radian2Degree(const double &radian);
@@ -48,7 +45,7 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node); // in meters
 */
 void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<std::vector<double>> &VLC_SINR_matrix);
 double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<double> &front_end_vector, int VLC_AP_index, int UE_index, int subcarrier_index);
-double estimateOneVlcFrontEnd(int subcarrier_index);
+//* double estimateOneVlcFrontEnd(int subcarrier_index);
 
 
 /*
@@ -58,14 +55,24 @@ void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, 
 double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, int VLC_AP_index, int UE_index, int subcarrier_index);
 //* double getSpectralEfficiency(double SINR);
 
+
 /*
-    RF channel gain !*-*-NEW*-*-!
+    RF channel gain
 */
-void calculateRFChannelGain(NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &RF_channel_gain_vector);
-double estimateOneRFLightOfSight(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node);
+void calculateRFChannelGain(NodeContainer &RF_AP_Node,NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<double> &RF_channel_gain_vector);
+double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node);
+
+
+/*
+    RF SINR
+*/
+void calculateALLRFSINR(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_channel_gain_vector);
+double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_index);
+
+
 /*
     RF data rate
 */
-void calculateRfDataRate(std::vector<double> &RF_data_rate_vector);
-
+void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_data_rate_vector);
+double estimatOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index);
 #endif // CHANNEL_H

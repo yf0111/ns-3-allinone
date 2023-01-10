@@ -290,86 +290,6 @@ int main(int argc, char *argv[])
 
     std::vector<MyUeNode> my_UE_list = initializeMyUeNodeList(UE_nodes);
 
-
-    /** add ip/tcp stack to all nodes.**/
-    // InternetStackHelper internet;
-    // internet.InstallAll ();
-
-
-    // /** set p2p helper **/
-    // PointToPointHelper p2p;
-    // p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-    // p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0.1)));
-
-    // /*
-    //   Channel[i][j] 放的是 AP i - UE j的link
-    //   該link用Netdevicecontainer表達
-    //   Netdevicecontainer.Get(0) = transmitter device
-    //   Netdevicecontainer.Get(1) = receiver device
-    // */
-
-    // std::vector<std::vector<NetDeviceContainer>> VLC_Channel(VLC_AP_Num,std::vector<NetDeviceContainer> (UE_Num));
-    // for(int i=0;i<VLC_AP_Num;i++){
-    //   for(int j=0;j<UE_Num;j++){
-    //     VLC_Channel[i][j]=p2p.Install(VLC_AP_Nodes.Get(i),UE_Nodes.Get(j));
-    //   }
-    // }
-
-    // /** Later, we add IP addresses. **/
-    // std::vector<Ipv4InterfaceContainer> ipvec;
-    // Ipv4AddressHelper ipv4;
-    // for(int i=0;i<VLC_AP_Num;i++){
-    //   for(int j=0;j<UE_Num;j++){
-    //     std::string addressStr = "10."+std::to_string(i+1) +"." + std::to_string(j+1) + ".0";
-    //     ipv4.SetBase(addressStr.c_str(),"255.255.255.0");
-    //     ipvec.push_back(ipv4.Assign (VLC_Channel[i][j]));
-
-    //     #if DEBUG_MODE
-    //       std::cout<<ipvec.back().GetAddress(1)<<" ";
-    //     #endif
-    //   }
-    //   #if DEBUG_MODE
-    //     std::cout << std::endl;
-    //   #endif
-    // }
-
-    // // set serve Port
-    // uint16_t servPort = 50000;
-
-    // // Create a packet sink to receive these packets on n2...
-    // PacketSinkHelper sink ("ns3::TcpSocketFactory",
-    //                        InetSocketAddress (Ipv4Address::GetAny (), servPort));
-
-    // ApplicationContainer apps ;
-    // apps.Add(sink.Install(UE_Nodes));
-    // apps.Start (Seconds (0.0));
-    // apps.Stop (Seconds (6.0));
-
-    // // Create and bind the socket...
-    // std::vector<std::vector<Ptr<Socket>>> localSockets(VLC_AP_Num,std::vector<Ptr<Socket> > (UE_Num));
-    // for(int i=0;i<VLC_AP_Num;i++){
-    //   for(int j=0;j<UE_Num;j++){
-    //     localSockets[i][j] = Socket::CreateSocket (VLC_AP_Nodes.Get (i), TcpSocketFactory::GetTypeId ());
-    //     localSockets[i][j]->Bind();
-    //   }
-    // }
-    // // Trace changes to the congestion window
-    // // Config::ConnectWithoutContext ("/NodeList/0/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeCallback (&CwndTracer));
-
-    // ApplicationContainer::Iterator i;
-    // for (i = apps.Begin (); i != apps.End (); ++i){
-    //         (*i)->TraceConnectWithoutContext("Rx", MakeCallback(&RxEndAddress));
-    // }
-    // // ...and schedule the sending "Application"; This is similar to what an
-    // // ns3::Application subclass would do internally.
-
-    // int ipvec_index=0;
-    // for(int i=0;i<VLC_AP_Num;i++){
-    //   for(int j=0;j<UE_Num;j++){
-    //     Simulator::Schedule(Seconds(0.0),&StartFlow,localSockets[i][j],ipvec[ipvec_index++].GetAddress(1), servPort);
-    //   }
-    // }
-
     // start time
     clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -486,36 +406,36 @@ int main(int argc, char *argv[])
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //begin implementation of sending "Application"
+/*
+    2023/01/10 : NO NEED to change
+*/
+
 void StartFlow (Ptr<Socket> localSocket,
                 Ipv4Address servAddress,
-                uint16_t servPort)
-{
-  NS_LOG_LOGIC ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
-  localSocket->Connect (InetSocketAddress (servAddress, servPort)); //connect
+                uint16_t servPort){
+    NS_LOG_LOGIC ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
+    localSocket->Connect (InetSocketAddress (servAddress, servPort)); //connect
 
   // tell the tcp implementation to call WriteUntilBufferFull again
   // if we blocked and new tx buffer space becomes available
   //localSocket->SetSendCallback (MakeCallback (&WriteUntilBufferFull));
-  WriteUntilBufferFull (localSocket, localSocket->GetTxAvailable ());
-  currentTxBytes=0;
+    WriteUntilBufferFull (localSocket, localSocket->GetTxAvailable ());
+    currentTxBytes=0;
 }
 
-void WriteUntilBufferFull (Ptr<Socket> localSocket, uint32_t txSpace)
-{
-  while (currentTxBytes < totalTxBytes && localSocket->GetTxAvailable () > 0)
-    {
-      uint32_t left = totalTxBytes - currentTxBytes;
-      uint32_t dataOffset = currentTxBytes % writeSize;
-      uint32_t toWrite = writeSize - dataOffset;
-      toWrite = std::min (toWrite, left);
-      toWrite = std::min (toWrite, localSocket->GetTxAvailable ());
-      int amountSent = localSocket->Send (&data[dataOffset], toWrite, 0);
-      if(amountSent < 0)
-        {
+void WriteUntilBufferFull (Ptr<Socket> localSocket, uint32_t txSpace){
+    while (currentTxBytes < totalTxBytes && localSocket->GetTxAvailable () > 0){
+        uint32_t left = totalTxBytes - currentTxBytes;
+        uint32_t dataOffset = currentTxBytes % writeSize;
+        uint32_t toWrite = writeSize - dataOffset;
+        toWrite = std::min (toWrite, left);
+        toWrite = std::min (toWrite, localSocket->GetTxAvailable ());
+        int amountSent = localSocket->Send (&data[dataOffset], toWrite, 0);
+        if(amountSent < 0){
           // we will be called again when new tx space becomes available.
           return;
         }
-      currentTxBytes += amountSent;
+        currentTxBytes += amountSent;
     }
-  localSocket->Close ();
+    localSocket->Close ();
 }
