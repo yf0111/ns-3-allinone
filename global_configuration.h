@@ -28,6 +28,8 @@ const int RF_AP_num = 1;
 const int RF_AP_height = 5; // m
 const int RF_AP_bandwidth = 10; //MHz
 const int RF_AP_subchannel = 32; // number of sub channel
+const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
+const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
 
 /*
     VLC AP
@@ -38,7 +40,7 @@ const int VLC_AP_height = 5;
 const int VLC_AP_power = 4; //*-*-TEMP*-*-! transmitted optical power of a LiFi AP(P_tx , unit:W) , indicates the allocated transmit electrical power on the nth subchannel of the cth VLC AP (P^VLC_n,c , ?)
 const int VLC_AP_bandwidth = 20; // MHz
 const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
-const double noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
+const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
 const double conversion_efficiency = 0.5; // optical to electrical conversion efficiency (τ) , PD’s responsivity (μ)
 //* const double optical_to_electric_power_ratio = 3.0; // κ
 
@@ -70,33 +72,14 @@ const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
 /*
     2023/01/09 : benchmark don't have this !
 */
-const double fitting_coefficient = 2.88;
-const double three_dB_cutoff = 30; // MHz
-
-/*
-    handover : benchmark don't have handover
-*/
-//* const double VHO_efficiency = 0.6;
-//* const double HHO_efficiency = 0.9;
+//* const double fitting_coefficient = 2.88;
+//* const double three_dB_cutoff = 30; // MHz
 
 
 /*
     RF channel
 */
-//* const int max_backoff_stage = 1024;
-//* const double channel_bit_rate = 1732.0 * 5;
-//* const double RTS_time = 160.0; // µs
-//* const double CTS_time = 140.0; // µs
-//* const double header_time = 230.0; // µs
-//* const double ACK_time = 140.0; // µs
-//* const double SIFS_time = 28.0; // µs
-//* const double PIFS_time = 80.0; // µs
-//* const double DIFS_time = 128.0; // µs
-//* const double slot_time = 52.0; // It is not given in benchmark paper. I infer this value by PIFS = SIFS + slot time based on ieee 802.11.
-//* const double propagation_delay = 1000.0; // µs
-//* const double utilization_ratio = 2.0; // ε
-const double carrier_frequency = 2.4; // GHz
-
+const double RF_carrier_frequency = 2.4; // GHz !*-*-NOICE*-*-! : USE where?
 
 /*
     random orientation angle
@@ -108,12 +91,6 @@ const double carrier_frequency = 2.4; // GHz
 //* const double c_1 = pow(0.05, sampling_time/coherence_time);
 //* const double c_0 = (1.0 - c_1) * angle_mean;
 //* const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
-
-
-/*
-    utility function
-*/
-//* const double beta = 1.0; // fairness coefficient
 
 
 /*

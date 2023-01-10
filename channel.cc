@@ -12,66 +12,54 @@
 
 
 
-int counter = 0;
 static const double lambertian_coefficient = (-1) / (log2(cos(degree2Radian(PHI_half)))); // m
 static const double concentrator_gain = pow(refractive_index, 2) / pow(sin(degree2Radian(field_of_view / 2)), 2);
 
 
-/*
-    table of conversion from SINR to spectral efficiency : My benchmark don't have SINR to spectral efficiency table
-
-    bit/s/Hz = 1 Mbit/s/MHz
-*/
-
-/* //*
-static const std::map<double, double, std::greater<double>> SINR_to_spectral_efficiency = { {0.0, 0}, {1.0, 0.877}, {3.0, 1.1758}, {5.0, 1.4766},
-                                                                                             {8.0, 1.9141}, {9.0, 2.4063}, {11.0, 2.7305}, {12.0, 3.3223},
-                                                                                             {14.0, 3.9023}, {16.0, 4.5234}, {18.0, 5.1152}, {20.0, 5.5547} };
-*/
-
-void precalculation(NodeContainer  &RF_AP_node,
+void precalculation(NodeContainer  &RF_AP_node, // !*-*-TODO*-*-! change!
                       NodeContainer  &VLC_AP_nodes,
                       NodeContainer  &UE_nodes,
                       std::vector<std::vector<double>> &VLC_LOS_matrix,
-                      std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix,
+                      //* std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, //!*-*-NOTICE*-*-! 2023/01/10 : turn VLC_SINR_matrix 3d to 2d
+                      std::vector<std::vector<double>> &VLC_SINR_matrix,
+                      std::vector<std::vector<double>> &VLC_data_rate_matrix,
                       std::vector<double> &RF_channel_gain_vector,
+                      std::vector<double> &RF_SINR_vector,
                       std::vector<double> &RF_data_rate_vector,
-                      std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix,
                       std::vector<MyUeNode> &my_UE_list)
 {
     calculateAllVlcLightOfSight(VLC_AP_nodes, UE_nodes, my_UE_list, VLC_LOS_matrix);
-
+    calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix);
+    calculateAllVlcDataRate(VLC_SINR_matrix, VLC_data_rate_matrix);
 #if DEBUG_MODE
     printVlcLosMatrix(VLC_LOS_matrix);
-#endif
-
-    calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix);
-
-#if DEBUG_MODE
     printVlcSinrMatrix(VLC_SINR_matrix);
+    printVlcDataRateMatrix(VLC_data_rate_matrix);
 #endif
 
-
-    // data rate for RF
-    //
-    // since RF data rate only depends on the number of serving UE,
-    // here we pre-calculate all possible data rates under different number of serving UEs,
-    // thus we do this once and for all
-    if (!counter) {
-        counter = 1;
-        calculateRfDataRate(RF_data_rate_vector);
-    }
-
-    // data rate for VLC
-    calculateAllVlcDataRate(VLC_SINR_matrix, VLC_data_rate_matrix);
-
+    calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector);
+    calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);
+    calculateALLRFDataRate(RF_SINR_vector,RF_data_rate_vector);
 
 #if DEBUG_MODE
-    printRfDataRateVector(RF_data_rate_vector);
-    printVlcDataRateMatrix(VLC_data_rate_matrix);
+    printRFChannelGainVector(RF_channel_gain_vector);
+    printRFSINRVector(RF_SINR_vector);
+    printRFDataRateVector(RF_data_rate_vector);
 #endif
 }
 
+    for (int i = 0; i < UE_num; i++)
+        my_UE_list[i].randomOrientationAngle(UE_nodes.Get(i));
+
+    for (int i = 0; i < VLC_AP_num; i++) {
+		for (int j = 0; j < UE_num; j++) {
+			VLC_LOS_matrix[i][j] = estimateOneVlcLightOfSight(VLC_AP_nodes.Get(i), UE_nodes.Get(j), my_UE_list[j]);
+		}
+	}
+}
+/*
+    VLC LOS !*-*-NOTICE*-*-! 2023/01/10 : benchmark only LOS
+*/
 double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &VLC_LOS_matrix) {
 
     for (int i = 0; i < UE_num; i++)
@@ -83,11 +71,6 @@ double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &U
 		}
 	}
 }
-
-/*
-    VLC channel gain, including LOS and front-end
-*/
-// line of sight
 double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node) {
     const double cosine_incidence_angle = getCosineOfIncidenceAngle(VLC_AP, UE, UE_node); // cos(ψ)
 
@@ -105,9 +88,8 @@ double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_n
 
     return line_of_sight;
 }
-
 // cosψ = 1/d((x_a-x_u)sinθcosω+(y_a-y_u)sinθsinω+(z_a-z_u)cosθ) based on (3)
-double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node) {
+double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node) { // 2023/01/10 : parameter Ptr<Node> UE is necessary?
     double polar_angle = UE_node.getPolarAngle();
     double azimuth_angle = UE_node.getAzimuthAngle();
 
@@ -129,7 +111,6 @@ double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_no
 
     return (first_term + second_term + last_term) / dist;
 }
-
 /*
     distance and angle calculation
 
@@ -161,16 +142,12 @@ double getIrradianceAngle(Ptr<Node> AP, MyUeNode &UE_node) {
 
     return atan(plane_dist / height_diff);
 }
-
-
 double radian2Degree(const double &radian) {
     return radian * 180.0 / PI;
 }
-
 double degree2Radian(const double &degree) {
     return degree / 180.0 * PI;
 }
-
 double getDistance(Ptr<Node> AP, MyUeNode &UE_node) {
     Ptr<MobilityModel> AP_mobility_model = AP->GetObject<MobilityModel>();
     Vector AP_pos = AP_mobility_model->GetPosition();
@@ -184,17 +161,21 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node) {
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-
 /*
     VLC SINR
 */
 
-void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix) {
+void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<std::vector<double>> &VLC_SINR_matrix) { //* , std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix
     // initialize VLC_SINR_matrix
-    VLC_SINR_matrix = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0)));
+    //* VLC_SINR_matrix = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0)));
+    VLC_SINR_matrix = std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>>(UE_num,0.0));
 
+    /*
+        2023/01/10 : NO NEED front-end response?
+    */
     // pre-calculate front-end of all effective subcarriers
-    std::vector<double> front_end_vector(effective_subcarrier_num + 1, 0.0);
+
+    /*std::vector<double> front_end_vector(effective_subcarrier_num + 1, 0.0);
     for (int i = 1; i < effective_subcarrier_num + 1; i++)
         front_end_vector[i] = estimateOneVlcFrontEnd(i);
 
@@ -212,7 +193,7 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::
             }
             else {
                 double first_term = subcarrier_num * fitting_coefficient * three_dB_cutoff / (VLC_AP_bandwidth * 2);
-                double inner_numerator = std::pow(optical_to_electric_power_ratio, 2) * noise_power_spectral_density * VLC_AP_bandwidth;
+                double inner_numerator = std::pow(optical_to_electric_power_ratio, 2) * VLC_noise_power_spectral_density * VLC_AP_bandwidth;
                 double inner_denominator = std::pow(conversion_efficiency * VLC_AP_power, 2) * (std::pow(VLC_LOS_matrix[VLC_AP_idx][UE_idx], 2) - interference);
                 double second_term = log(inner_numerator / inner_denominator);
 
@@ -223,20 +204,27 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::
                 VLC_SINR_matrix[VLC_AP_idx][UE_idx][k] = estimateOneVlcSINR(VLC_LOS_matrix, front_end_vector, VLC_AP_idx, UE_idx, k);
 			}
 		}
+	}*/
+
+	for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            VLC_SINR_matrix[VLC_AP_index][UE_index] = estimateOneVlcSINR(VLC_LOS_matrix,VLC_AP_index,UE_index);
+        }
 	}
 }
-
 double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<double> &front_end_vector, int VLC_AP_index, int UE_index, int subcarrier_index) {
     double interference = 0;
     for (int i = 0; i < VLC_AP_num; i++) {
         if (i != VLC_AP_index)
-            interference += pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index] * front_end_vector[subcarrier_index], 2);
+            //* interference += pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index] * front_end_vector[subcarrier_index], 2);
+            interference += pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index],2);
     }
     double VLC_AP_sub_bandwidth = VLC_AP_bandwidth / VLC_sub_channel // B^VLC_sub = B^VLC / N^VLC = VLC_AP_bandwidth / VLC_sub_channel
-    double noise = VLC_AP_sub_bandwidth * noise_power_spectral_density;
-    double SINR = pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index] * front_end_vector[subcarrier_index], 2) / (interference + noise);
+    double noise = VLC_AP_sub_bandwidth * VLC_noise_power_spectral_density;
+    //* double SINR = pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index] * front_end_vector[subcarrier_index], 2) / (interference + noise);
+    double SINR = pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
     /*
-        2023/01/09 : why?
+        2023/01/09 : why need to change to logarithmic SINR?
     */
     // change to logarithmic SINR
     //* return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
@@ -248,15 +236,29 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std:
 */
 // front-end
 // H_F(k) = exp( -(k * modulation_bandwidth) / (subcarrier_num * fitting_coefficient * 3dB_cutoff)) based on revised (4)
-double estimateOneVlcFrontEnd(int subcarrier_index) {
+/*double estimateOneVlcFrontEnd(int subcarrier_index) {
     //* return exp((-1) * subcarrier_index * VLC_AP_bandwidth / (subcarrier_num * fitting_coefficient * three_dB_cutoff));
     return exp((-1) * subcarrier_index * VLC_AP_bandwidth / (VLC_AP_subchannel * fitting_coefficient * three_dB_cutoff)); // *-*-QUESTION*-*-! sub channel = sub carrier?
-}
+}*/
 
 /*
     VLC data rate
 */
-void calculateAllVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix) {
+void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<double>> &VLC_data_rate_matrix) {
+    for (int i = 0; i < VLC_AP_num; i++) {
+		for (int j = 0; j < UE_num; j++) {
+		    /*
+                !*-*-NOTICE*-*-! : ρ not take into account yet ! (subchannel)
+		    */
+            VLC_data_rate_matrix[i][j] = estimateOneVlcDataRate(VLC_SINR_matrix,i,j);
+		}
+	}
+}
+double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix , int VLC_AP_index , int UE_index){
+    double data_rate = (VLC_AP_bandwidth / VLC_sub_channel) * log2(1 + VLC_SINR_matrix[VLC_AP_index][UE_index]) / 2;
+    return data_rate;
+}
+/*void calculateAllVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix) {
     for (int i = 0; i < VLC_AP_num; i++) {
 		for (int j = 0; j < UE_num; j++) {
 			for (int k = 1; k < effective_subcarrier_num+1; k++) {
@@ -265,91 +267,65 @@ void calculateAllVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_
 		}
 	}
 }
-
 // data rate of the RU on the certain subcarrier based on Eq. (6) in the benchmark
-/*
+
 double estimateOneVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix, int VLC_AP_index, int UE_index, int subcarrier_index) {
     double numerator = 2 * VLC_AP_bandwidth * getSpectralEfficiency(VLC_SINR_matrix[VLC_AP_index][UE_index][subcarrier_index]);
     double denominator = subcarrier_num * time_slot_num;
     return numerator / denominator;
 }*/
 
-double estimateOneVlcDataRate(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix , int VLC_AP_index , int UE_index,int subchannel_index){
-    double numerator = (VLC_AP_bandwidth / VLC_sub_channel) * log2(1 + VLC_SINR_matrix[VLC_AP_index][UE_index][subchannel_index]);
-    double denominator = 2;
-    return numerator / denominator;
-}
 
 
-
-//* return the corresponding spectral efficiency of the given SINR according to the pre-established table
 /*
-double getSpectralEfficiency(double SINR) {
-    auto it = SINR_to_spectral_efficiency.lower_bound(SINR);
-
-    return it->second;
-}
+    RF Channel Gain
 */
-
-
-/*
-    RF data rate for each UE connected to WiFi
-
-    NOTE:
-    - Slot time is not given in the benchmark.
-    - RTS/CTS is much shorter than SIFS, PIFS, and DIFS in the benchmark.
-    However, the situation is opposite in "Downlink and uplink resource allocation in IEEE 802.11 wireless LANs".
-*/
-/*
-void calculateRfDataRate(std::vector<double> &RF_data_rate_vector) {
-    // for the case when no serving UE
-    RF_data_rate_vector[0] = 0.0;
-
-    for (int serving_UE_num = 1; serving_UE_num < UE_num + 1; serving_UE_num++) {
-        double downlink_utilization_eff = calculateRfDownlinkUtilizationEfficiency(serving_UE_num);
-
-        RF_data_rate_vector[serving_UE_num] = channel_bit_rate * downlink_utilization_eff / serving_UE_num;
-    }
-}*/
-
-void calculateRFChannelGain(NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<double> &RF_channel_gain_vector){
-    for (int i = 0; i < RF_AP_num; i++) {
-		for (int j = 0; j < UE_num; j++) {
-			RF_channel_gain_vector[i][j] = estimateOneRFChannelGain(R.Get(i), UE_nodes.Get(j), my_UE_list[j]);
-		}
+void calculateRFChannelGain(NodeContainer &RF_AP_node,NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<double> &RF_channel_gain_vector){
+	for(int i = 0;i<UE_num;i++){
+        RF_channel_gain_vector[i] = estimateOneRFLightOfSight(RF_AP_node.Get(i), UE_nodes.Get(j), my_UE_list[j]); //!*-*-NOTICE*-*- : NLOS?
 	}
 }
-
-double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){ // !*-*-*TODO:
+double estimateOneRFLightOfSight(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
 
     const double distance = getDistance(RF_AP, UE_node);
 
-    double los_channel_gain = 18.7*log10(distance) + 46.8 + 20*log10(carrier_frequency/5);
-
-    return line_of_sight;
+    double path_loss = 18.7*log10(distance) + 46.8 + 20*log10(carrier_frequency/5);
+    double path_loss_power = -(path_loss)/10;
+    double rf_los_channel_gain = pow(10,path_loss_power);
+    return rf_los_channel_gain;
 }
 
-
-double calculateRfDownlinkUtilizationEfficiency(int serving_UE_num) {
-    double system_utilization = calculateRfSystemUtilization(serving_UE_num);
-
-    return system_utilization * (utilization_ratio / (1 + utilization_ratio));
+/*
+    RF SINR
+*/
+void calculateAllRFSINR(std::vector<double> &RF_SINR_vector, std::vector<double> &RF_channel_gain_vector) {
+    RF_SINR_vector = std::vector<double> (UE_num,0.0);
+	for( int i = 0; i < UE_num ; i++){
+        RF_SINR_vector[i] = estimateOneRFSINR(RF_channel_gain_vector,i);
+	}
+}
+double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector, int UE_index) {
+    /*
+        !*-*-NOTICE*-*-! : this RF SINR not take M (adjacent industrial factory) and I^RF,U_k,n (interference from competing technologies)into account yet !
+    */
+    double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
+    double denominator = RF_noise_power_spectral_density*(RF_AP_bandwidth / RF_AP_subchannel);
+    double SINR = numerator / denominator;
+    return SINR;
 }
 
-double calculateRfSystemUtilization(int serving_UE_num) {
-    double t_c = RTS_time + DIFS_time;
-    double t_s = RTS_time + CTS_time + header_time + propagation_delay + ACK_time + 3*SIFS_time + DIFS_time;
-    double t_d = header_time + propagation_delay + ACK_time + SIFS_time + PIFS_time;
-
-    double p_c = 2.0 / (max_backoff_stage + 1);
-    double p_t = 1 - pow(1 - p_c, serving_UE_num + 1);
-    double p_s = ((serving_UE_num + 1) * p_c * pow(1 - p_c, serving_UE_num)) / (p_t);
-    double p_d = (serving_UE_num - 1) / (2 * serving_UE_num * p_s);
-
-    double denominator = (1 - p_t) * slot_time;
-    denominator += p_t * p_s * (1 - p_d) * t_s;
-    denominator += p_t * p_s * p_d * t_d;
-    denominator += p_t * (1 - p_s) * t_c;
-
-    return (p_s * p_t * propagation_delay) / denominator;
+/*
+    RF data rate
+*/
+void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_data_rate_vector){
+    for (int i = 0; i < UE_num; i++) {
+        /*
+            !*-*-NOTICE*-*-! : ρ not take into account yet ! (subchannel)
+        */
+        RF_data_rate_vector[i] = estimateOneRFDataRate(RF_SINR_vector,i);
+    }
+}
+double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector , int UE_index){
+    double data_rate = (RF_AP_bandwidth / RF_AP_subchannel) * log2(1 + RF_SINR_vector[UE_index]);
+    return data_rate;
 }

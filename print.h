@@ -6,14 +6,25 @@
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
 
-
+/*
+    !*-*-NEW*-*-! 2023/01/10
+    printVlcLosMatrix
+    printVlcSinrMatrix
+    printVlcDataRateMatrix
+    printRFChannelGainVector
+    printRFSINRMatrix
+*/
 void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix);
 
-void printVlcSinrMatrix(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix);
+void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix);
 
-void printRfDataRateVector(std::vector<double> &RF_data_rate_vector);
+void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matrix);
 
-void printVlcDataRateMatrix(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix);
+void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector);
+
+void printRFSINRMatrix(std::vector<double> &RF_SINR_vector);
+
+void printRFDataRateVector(std::vector<double> &RF_data_rate_vector);
 
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix);
 

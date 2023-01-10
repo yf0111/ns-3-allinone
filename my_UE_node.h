@@ -49,7 +49,10 @@ public:
     double getAzimuthAngle(void);
     void randomOrientationAngle(Ptr<Node> UE);
 
-    // 2023/01/09 : NEED CHANGE !
+    /*
+        2023/01/09 : NEED CHANGE !
+    */
+    /*
     void recordResourceUnit(std::pair<int,int> newRu);
     //* void updateNthResourceUnitBlock(int n, RuRangeType new_RU);
     void updateNthResourceUnitBlock(int n,RuType new_Ru);
@@ -61,7 +64,7 @@ public:
     void clearRuBlock(void);
     std::vector<RuRangeType> getWholeRuBlock(void);
     //* void arrangeRuBlock(Order order);
-
+    */
 
 private:
     int node_ID;
@@ -82,7 +85,7 @@ private:
     // of the form <<subcarrier start, time slot start>, <subcarrier end, time slot end>>
     //* std::vector<RuRangeType> RU_block;
 
-    std::vector<RuType> RU_block;
+    /*std::vector<RuType> RU_block;*/
 
     void setPolarAngle(double new_polar_angle);
     void setAzimuthAngle(double new_azimuth_angle);

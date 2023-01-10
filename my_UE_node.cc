@@ -172,89 +172,11 @@ void MyUeNode::randomOrientationAngle(Ptr<Node> UE) {
     2023/01/09 : benchmark resource allocation is sub channel? -> turn Resource Unit into sub channel
     sub channel : vector
     typedef std::pair<int,int> RuType; // <sub channel index , time>
+
+    2023/01/10 : !*-*-NOTICE*-*-! NEED change about Resource Unit
+        Improving the performance of Heterogeneous LiFi-WiFi network using a novel Link Aggregation Framework : using TDMA
+        Learning-Based Energy-Efficient Resource Management by Heterogeneous RF/VLC for Ultra-Reliable Low-Latency Industrial IoT Networks L using OFDMA
 */
-
-
-/*
-void MyUeNode::recordResourceUnit(std::pair<int,int> start, std::pair<int,int> tail) {
-    RU_block.emplace_back(start, tail);
-}*/
-
-void MyUeNode::recordResourceUnit(RuType newRu){
-    RU_block.emplace_back(newRu);
-}
-
-
-void MyUeNode::updateNthResourceUnitBlock(int n, RuType new_RU) {
-    if (n < RU_block.size())
-        RU_block[n] = new_RU;
-    else
-        std::cout << "Access to RU_block vector is out of bound\n";
-}
-
-/*
-RuRangeType MyUeNode::getNthResourceUnitBlock(int n) {
-    if (n < RU_block.size())
-        return RU_block[n];
-    else
-        std::cout << "Access to RU_block vector is out of bound\n";
-}*/
-
-RuType MyUeNode::getNthResourceUnitBlock(int n) {
-    if (n < RU_block.size())
-        return RU_block[n];
-    else
-        std::cout << "Access to RU_block vector is out of bound\n";
-}
-
-void MyUeNode::removeNthResourceUnitBlock(int n) {
-    if (n < RU_block.size()) {
-        RU_block.erase(RU_block.begin() + n);
-    }
-    else
-        std::cout << "Access to RU_block vector is out of bound\n";
-}
-
-void MyUeNode::removeLastResourceUnitBlock(void) {
-    RU_block.pop_back();
-}
-
-int MyUeNode::getRuBlockSize(void) {
-    return RU_block.size();
-}
-
-void MyUeNode::clearRuBlock(void) {
-    RU_block.clear();
-}
-
-/*
-std::vector<RuRangeType> MyUeNode::getWholeRuBlock(void) {
-    if (!RU_block.empty())
-        return RU_block;
-
-    return std::vector<RuRangeType> ();
-}*/
-
-std::vector<RuType> MyUeNode::getWholeRuBlock(void) {
-    if (!RU_block.empty())
-        return RU_block;
-
-    return std::vector<RuType> ();
-}
-
-/* No need?
-void MyUeNode::arrangeRuBlock(Order order) {
-    if (!RU_block.empty()) {
-        if (order == high_to_low) {
-            std::sort(RU_block.begin(), RU_block.end(),
-                  [](RuRangeType &a, RuRangeType& b){ return ((a.first.first > b.first.first) || (a.first.first == b.first.first && a.first.second > b.first.second)); });
-        }
-        else if (order == low_to_high) {
-            std::sort(RU_block.begin(), RU_block.end(),
-                  [](RuRangeType &a, RuRangeType& b){ return ((a.first.first < b.first.first) || (a.first.first == b.first.first && a.first.second < b.first.second)); });
-        }
-    }
-}*/
 
 
 

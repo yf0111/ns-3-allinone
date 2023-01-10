@@ -7,12 +7,17 @@
 #include "print.h"
 #include "global_configuration.h"
 #include "my_UE_node.h"
+/*
+    !*-*-NEW*-*-! 2023/01/10
+    printVlcLosMatrix
+    printVlcSinrMatrix
+    printVlcDataRateMatrix
+    printRFChannelGainVector
+    printRFSINRMatrix
+*/
 
-
-void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix)
-{
+void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix){
     std::cout << "VLC LOS matrix as below: " << std::endl;
-
     for (int i = 0; i < VLC_AP_num; i++) {
         for (int j = 0; j < UE_num; j++) {
             std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(15) << VLC_LOS_matrix[i][j] << " ";
@@ -22,69 +27,68 @@ void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix)
     std::cout << std::endl;
 }
 
-void printVlcSinrMatrix(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix)
-{
-
+void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     std::cout << "VLC SINR matrix as below: " << std::endl;
-
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
 
         for (int j = 0; j < UE_num; j++) {
             std::cout << "\tFor UE " << j << ": \n";
             std::cout << "\t";
-
-            for (int k = 0; k <= effective_subcarrier_num; k++) {
+            /*for (int k = 0; k <= effective_subcarrier_num; k++) {
                 std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_SINR_matrix[i][j][k] << " ";
-            }
-
+            }*/
+            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<VLC_SINR_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
-
         std::cout << std::endl;
     }
-
     std::cout << std::endl;
 }
 
-void printRfDataRateVector(std::vector<double> &RF_data_rate_vector)
-{
-
-    std::cout << "RF data rate vector for different number of serving UE as below : " << std::endl;
-
-    for (int i = 0; i < UE_num+1; i++) {
-        std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(2) << RF_data_rate_vector[i] << " ";
-    }
-
-    std::cout << std::endl << std::endl;
-}
-
-void printVlcDataRateMatrix(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix)
-{
+void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matrix){
     std::cout << "VLC data rate matrix as below: " << std::endl;
-
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
-
         for (int j = 0; j < UE_num; j++) {
             std::cout << "\tFor UE " << j << ": \n";
             std::cout << "\t";
-
-            for (int k = 0; k <= effective_subcarrier_num; k++) {
+            /*for (int k = 0; k <= effective_subcarrier_num; k++) {
                 std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j][k] << " ";
-            }
-
+            }*/
+            std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j]<< " ";
             std::cout << std::endl;
         }
-
         std::cout << std::endl;
     }
-
     std::cout << std::endl;
 }
 
-void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix)
-{
+void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector){
+    std::cout << "RF Channel Gain vector as below: " << std::endl;
+    for(int i = 0 ; i<UE_num;i++){
+        std::cout<<std::set::setiosflags(std::ios::fixed) << std::setprecision(15) << RF_channel_gain_vector[i]<< " ";
+    }
+    std::cout << std::endl;
+}
+
+void printRFSINRMatrix(std::vector<double> &RF_SINR_vector){
+    std::cout << "RF SINR vector as below: " << std::endl;
+    for(int i = 0 ; i<UE_num;i++){
+        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_SINR_vector[i]<<" ";
+    }
+    std::cout << std::endl;
+}
+
+void printRFDataRateVector(std::vector<double> &RF_data_rate_vector()){
+    std::cout << "RF Data Rate vector as below: " << std::endl;
+    for(int i = 0 ; i<UE_num;i++){
+        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_data_rate_vector[i]<<" ";
+    }
+    std::cout << std::endl;
+}
+
+void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix){
 
     std::cout << "AP association matrix as below: " << std::endl;
 
