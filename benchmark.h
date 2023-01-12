@@ -19,8 +19,17 @@ void benchmarkMethod(int &state,
                      std::vector<double> &RF_SINR_vector,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
-                     std::vector<MyUeNode> &my_UE_list);
+                     std::vector<MyUeNode> &my_UE_list,
+                     std::vector<double> &UE_final_data_rate_vector);
 
+
+void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
+             std::vector<double> &RF_SINR_vector,
+             std::vector<std::vector<double>> &VLC_SINR_matrix,
+             std::vector<double> &UE_final_data_rate_vector);
+
+
+double getSpectralEfficiency(double SINR);
 
 /*std::vector<int> initializedStep(std::vector<double> &RF_data_rate_vector,
                                 std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix,
@@ -28,8 +37,6 @@ void benchmarkMethod(int &state,
                                 std::vector<std::vector<double>> &throughtput_per_iteration);
 */
 
-std::vector<int> initializedStep(std::vector<std::vector<double>> VLC_SINR_matrix,
-                                 std::vector<std::vector<double>> RF_SINR_vector);
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
                                std::vector<std::vector<int>> &AP_sssociation_matrix,

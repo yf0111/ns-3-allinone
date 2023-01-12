@@ -44,4 +44,7 @@ void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix);
 
 void printBlockedUE(std::vector<int> &blocked_UE);
 
+void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers);
+
+void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector);
 #endif

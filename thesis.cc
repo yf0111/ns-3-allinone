@@ -64,7 +64,9 @@ std::vector<double> theTime(1, 0.0);
 static int state = 0;
 /*
     AP association matrix : AP_num x UE_num
-        if AP i is association to UE j then (i,j) == 1
+    if AP i is association to UE j then (i,j) == 1
+
+    AP_association_matrix[0] is RF AP
 */
 std::vector<std::vector<int>> AP_association_matrix(RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
 
@@ -89,6 +91,11 @@ std::vector<double> recorded_avg_throughput_per_UE(UE_num, 0.0);
 std::vector<double> recorded_fairness_of_throughput_per_state(state_num, 0.0);
 std::vector<double> recorded_variance_of_satisfaction_per_state(state_num, 0.0);
 
+/*
+    !*-*-NEW*-*-!
+    //2// : LA-SINR
+*/
+std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
 
 
 static const uint32_t totalTxBytes = 10000000;
@@ -144,6 +151,8 @@ static void initialize() {
     RF_channel_gain_vector = std::vector<double> (UE_num,0.0);
     RF_SINR_vector = std::vector<double> (UE_num,0.0);
     RF_data_rate_vector = std::vector<double> (UE_num, 0.0); // in Mbps
+
+    UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
 
 #if DEBUG_MODE
     bool VLC_init = true,RF_init = true;
@@ -216,14 +225,16 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector);
 #endif
 
 
     /* CALCULATION OF PERFORMANCE METRICS */
 
-    /*
-    !*-*-TODO*-*-! 2023/01/11 : NEED change !
+
+    // !*-*-TODO*-*-! 2023/01/11 : NEED change !
+
+
     // 1. calculate the ratio of UEs connected to the RF AP to the total UEs
     int RF_cnt = 0;
 
@@ -274,10 +285,10 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     square_of_sum = pow(square_of_sum, 2);
     throughput_fairness = square_of_sum / (UE_num * sum_of_square);
     recorded_fairness_of_throughput_per_state[state] = throughput_fairness;
-    */
 
-/*
-!*-*-TODO*-*-! 2023/01/11 : NEED change
+
+
+// !*-*-TODO*-*-! 2023/01/11 : NEED change
 #if DEBUG_MODE
     std::cout << "state " << state << std::endl;
     std::cout << "avg throughput: " << avg_data_rate << ", ";
@@ -286,7 +297,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     std::cout << "variance of satisfaction: " << variance_of_satisfaction << ", ";
     std::cout << "RF connection ratio: " << recorded_RF_ratio[state]* 100 << "%" << std::endl << std::endl;
 #endif // DEBUG_MODE
-*/
 
 
     // use another storage to keep UE's information
@@ -358,8 +368,8 @@ int main(int argc, char *argv[])
     /*
      * AFTER SIMULATION, CALCULATE OVERALL THROUGHPUT, FAIRNESS INDEX AND SATISFACTION
      */
-    /*
-    !*-*-TODO*-*-! 2023/01/11 : NEED change !
+
+    // !*-*-TODO*-*-! 2023/01/11 : NEED change !
 
     // overall avg. throughput, satisfaction, and satisfaction variance
     double avg_throughput = 0.0;
@@ -428,14 +438,14 @@ int main(int argc, char *argv[])
     std::cout << "avg. satisfaction: " << avg_satisfaction << std::endl;
     std::cout << "variance of satisfaction: " << avg_variance_of_satis << std::endl;
     std::cout << "execution time: " << exec_time << std::endl << std::endl;
-    */
+
 
 
     /*
      * OUTPUT THE RESULTS TO .CSV FILES
      */
-    /*
-    !*-*-TODO*-*-! 2023/01/11 : NEED change !
+
+    //!*-*-TODO*-*-! 2023/01/11 : NEED change !
 
     std::fstream output;
 
@@ -455,7 +465,7 @@ int main(int argc, char *argv[])
     }
 
     output.close();
-    */
+
     Simulator::Destroy();
 }
 

@@ -5,8 +5,8 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <complex>
 #include <boost/math/distributions/rayleigh.hpp>
-
 
 #include "channel.h"
 #include "print.h"
@@ -257,27 +257,35 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
 
     //2//
     double distance = getDistance(RF_AP,UE_node);
-    std::normal_distribution<double> Gaussian (0.0,10);    //normal distribution 即 Gaussian distribution
-    boost::math::rayleigh_distribution<double> rayleigh(0.8); // standard rayleigh distribution
-    std::uniform_real_distribution<double> random_p(0.0, 1.0);// uniform random variable between 0.0 and 1.0 for inverse transform sampling
+    std::normal_distribution<double> Gaussian (0.0,1);  // Gaussian distribution : X is a Gaussian random variable with zero mean and standard deviation σ
     std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
-    double X=0.0,H=0.0,p;
+    /*
+    σ before break_distance : 3 dB
+    σ after break_distance : 5 dB
+    */
+    double X=0.0;
     for(int i=0;i<100000;i++){
-        X+= Gaussian(gen);
-        p = random_p(gen);
-        H+= quantile(rayleigh,p);
+        X += Gaussian(gen);
     }
     X/=100000;
-    H/=100000;
 
-    double L_d;
+    std::complex<double> j {0, 1};
+    double L_d,H;
+    const double irradiance_angle = getIrradianceAngle(RF_AP, UE_node);
     if(distance < breakpoint_distance){
-        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5;
+        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5 + X;
+        auto H_comp = ( 0.7071067811 * (cos(irradiance_angle) + ( j * sin(irradiance_angle))) ) + (0.7071067811 * X);
+        H = real(H_comp)*real(H_comp) - imag(H_comp) * imag(H_comp);
+        /*
+            2023/01/12 : leaf of imag part
+        */
     }
     else{
-        L_d = 20 * log10(RF_carrier_frequency*pow(distance,2.75)/pow(breakpoint_distance,1.75)) - 147.5;
+        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5 + 35 * log10( distance / breakpoint_distance ) + X ;
+        auto H_comp = 0 * cos(irradiance_angle) + ( j * sin(irradiance_angle)) + 0 * X ;
+        H = real(H_comp)*real(H_comp) - imag(H_comp) * imag(H_comp);
     }
-    double rf_los_channel_gain = pow(H,2) * pow(10,((-1)*L_d+X)/10.0);
+    double rf_los_channel_gain = pow(H,2) * pow(10,((-1)*L_d)/10.0);
     return rf_los_channel_gain;
 }
 
@@ -313,7 +321,9 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector, int UE_ind
     2023/01/10 : RF data rate function is useless for //2//
 */
 double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector , int UE_index){
-
+    /*
+    //1//
+    */
     double data_rate = (RF_AP_bandwidth / RF_AP_subchannel) * log2(1 + RF_SINR_vector[UE_index]);
     return data_rate;
 }

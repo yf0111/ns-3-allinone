@@ -241,3 +241,19 @@ void printBlockedUE(std::vector<int> &blocked_UE) {
 
     std::cout << std::endl;
 }
+
+void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers){
+    std::cout<<"AP Serve UE number as below : "<<std::endl;
+    for(int i=0;i<RF_AP_num+VLC_AP_num;i++){
+        std::cout<<"AP "<<i<<" : Serve "<<AP_serve_UE_numbers[i]<<" numbers of UEs \n";
+    }
+    std::cout<<std::endl;
+}
+
+void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
+    std::cout<<"LA-SINR UE final data rate as below : "<<std::endl;
+    for(int i=0;i<UE_num;i++){
+        std::cout<<"UE "<<i<<" data rate is :"<<UE_final_data_rate_vector[i]<<"\n";
+    }
+    std::cout<<std::endl;
+}

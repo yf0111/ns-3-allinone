@@ -20,7 +20,7 @@
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 5;
 const double time_period = 0.5; // sec
-const int state_num = 1;
+const int state_num = 5;
 
 
 /*
@@ -37,7 +37,7 @@ const int RF_AP_subchannel = 32; // number of sub channel
 //1//const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
 const double RF_AP_power = 20; // dBm
 //1//const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
-const double RF_noise_power_spectral_density = 3.16e-11; // dBm/MHz -> A^2/Hz
+const double RF_noise_power_spectral_density =  1e-21; // dBm/MHz -> A^2/Hz 3.1622776602e-11
 
 
 /*
@@ -50,7 +50,7 @@ const int VLC_AP_power = 3; //*-*-TEMP*-*-! transmitted optical power of a LiFi 
 const int VLC_AP_bandwidth = 40; // MHz
 const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
 //1//const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
-const double VLC_noise_power_spectral_density = 8.848e-11; // dBm/MHz -> A^2/Hz
+const double VLC_noise_power_spectral_density = 1e-21; // dBm/MHz -> A^2/Hz 8.848e-11
 const double conversion_efficiency = 0.53; // A/W  optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 // these values are found in "Resource Allocation in LiFi OFDMA Systems"
@@ -116,4 +116,9 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 */
 const int complete_config_period = state_num;
 
+
+/*
+    LA-SINR //2//
+*/
+const double la_overhead = 0.8;
 #endif // GLOBAL_CONFIGURATION_H
