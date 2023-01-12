@@ -62,17 +62,25 @@ std::vector<double> theTime(1, 0.0);
 
 
 static int state = 0;
-// std::vector<int> period_cand = {-5, -3, 2, 3, 5};
-// int complete_config_period = period_cand.front();
-
-std::vector<double> RF_data_rate_vector(UE_num + 1, 0.0); // in Mbps
-std::vector<double> discount_ratio_per_AP(RF_AP_num + VLC_AP_num, initial_discount);
-std::vector<std::vector<double>> VLC_LOS_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0));
+/*
+    AP association matrix : AP_num x UE_num
+        if AP i is association to UE j then (i,j) == 1
+*/
 std::vector<std::vector<int>> AP_association_matrix(RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
-std::vector<std::pair<int, int>> first_empty_RU_position (VLC_AP_num, std::make_pair(effective_subcarrier_num, time_slot_num - 1)); // the position of the first empty RU for each VLC AP (view from high freq to low)
-std::vector<std::vector<std::vector<double>>> VLC_SINR_matrix(VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0))); // in dB
-std::vector<std::vector<std::vector<double>>> VLC_data_rate_matrix(VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0))); // in Mbps
-std::vector<std::vector<std::vector<int>>> RU_matrix_per_VLC_AP(VLC_AP_num, std::vector<std::vector<int>> (effective_subcarrier_num + 1, std::vector<int> (time_slot_num, 0)));
+
+/*
+    VLC
+*/
+std::vector<std::vector<double>> VLC_LOS_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0));
+std::vector<std::vector<double>> VLC_SINR_matrix(VLC_AP_num, std::vector<double> (UE_num ,0.0)); // in dB
+std::vector<std::vector<double>> VLC_data_rate_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
+
+/*
+    RF
+*/
+std::vector<double> RF_channel_gain_vector(UE_num, 0.0);
+std::vector<double> RF_SINR_vector(UE_num, 0.0);
+std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
 
 
 std::vector<double> recorded_RF_ratio(state_num, 0.0); // the number of UEs that the RF AP serves in each state
@@ -95,6 +103,17 @@ void WriteUntilBufferFull(Ptr<Socket>, uint32_t);
 
 
 /*
+convert anything to string function
+*/
+template <typename T>
+std::string to_string(T x){
+    std::stringstream ss;
+    ss<<x;
+    return ss.str();
+}
+
+
+/*
   used for tracing and calculating throughput
  */
 static void RxEndAddress(Ptr<const Packet> p, const Address &address) {
@@ -114,17 +133,44 @@ static void RxEndAddress(Ptr<const Packet> p, const Address &address) {
 
 static void initialize() {
     state = 0;
-    counter = 0;
+    // counter = 0; NO USE?
 
     AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
-    discount_ratio_per_AP = std::vector<double> (RF_AP_num + VLC_AP_num, initial_discount);
-    RF_data_rate_vector = std::vector<double> (UE_num + 1, 0.0); // in Mbps
 
     VLC_LOS_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0));
-    first_empty_RU_position = std::vector<std::pair<int, int>> (VLC_AP_num, std::make_pair(effective_subcarrier_num, time_slot_num - 1)); // the position of the first empty RU for each VLC AP (view from high freq to low)
-    VLC_SINR_matrix = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0))); // in dB
-    VLC_data_rate_matrix = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (subcarrier_num, 0.0))); // in Mbps
-    RU_matrix_per_VLC_AP = std::vector<std::vector<std::vector<int>>> (VLC_AP_num, std::vector<std::vector<int>> (effective_subcarrier_num+1, std::vector<int> (time_slot_num, 0)));
+    VLC_SINR_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in dB
+    VLC_data_rate_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
+
+    RF_channel_gain_vector = std::vector<double> (UE_num,0.0);
+    RF_SINR_vector = std::vector<double> (UE_num,0.0);
+    RF_data_rate_vector = std::vector<double> (UE_num, 0.0); // in Mbps
+
+#if DEBUG_MODE
+    bool VLC_init = true,RF_init = true;
+    for(int i=0;i<VLC_AP_num;i++){
+        for(int j=0;j<UE_num;j++){
+            if(VLC_LOS_matrix[i][j] == 0 && VLC_SINR_matrix[i][j] == 0 && VLC_data_rate_matrix[i][j] == 0){
+            }
+            else{
+                VLC_init = false;
+            }
+        }
+    }
+    if(VLC_init){
+        std::cout<<" VLC initialize success ! "<<std::endl;
+    }
+
+    for(int i=0;i<UE_num;i++){
+        if(RF_channel_gain_vector[i] == 0 && RF_SINR_vector[i] == 0 && RF_data_rate_vector[i] == 0){
+        }
+        else{
+            RF_init = false;
+        }
+    }
+    if(RF_init){
+        std::cout<<" RF initialize success ! "<<std::endl;
+    }
+#endif // DEBUG_MODE
 
     recorded_avg_satisfaction_per_UE = std::vector<double> (UE_num, 0.0);
     recorded_avg_throughput_per_UE =  std::vector<double> (UE_num, 0.0);
@@ -167,15 +213,17 @@ static void updateToNextState(NodeContainer &RF_AP_node,
                       discount_ratio_per_AP, first_empty_RU_position, my_UE_list);
 
 #else
-
-    benchmarkDynamicLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix,
-                        VLC_SINR_matrix, RF_data_rate_vector, VLC_data_rate_matrix,
+    benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
+                       VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
+                       RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                         AP_association_matrix, my_UE_list);
 #endif
 
 
     /* CALCULATION OF PERFORMANCE METRICS */
 
+    /*
+    !*-*-TODO*-*-! 2023/01/11 : NEED change !
     // 1. calculate the ratio of UEs connected to the RF AP to the total UEs
     int RF_cnt = 0;
 
@@ -226,8 +274,10 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     square_of_sum = pow(square_of_sum, 2);
     throughput_fairness = square_of_sum / (UE_num * sum_of_square);
     recorded_fairness_of_throughput_per_state[state] = throughput_fairness;
+    */
 
-
+/*
+!*-*-TODO*-*-! 2023/01/11 : NEED change
 #if DEBUG_MODE
     std::cout << "state " << state << std::endl;
     std::cout << "avg throughput: " << avg_data_rate << ", ";
@@ -236,7 +286,7 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     std::cout << "variance of satisfaction: " << variance_of_satisfaction << ", ";
     std::cout << "RF connection ratio: " << recorded_RF_ratio[state]* 100 << "%" << std::endl << std::endl;
 #endif // DEBUG_MODE
-
+*/
 
 
     // use another storage to keep UE's information
@@ -299,6 +349,7 @@ int main(int argc, char *argv[])
 
     Simulator::Run();
 
+
     // end time
     clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -307,6 +358,8 @@ int main(int argc, char *argv[])
     /*
      * AFTER SIMULATION, CALCULATE OVERALL THROUGHPUT, FAIRNESS INDEX AND SATISFACTION
      */
+    /*
+    !*-*-TODO*-*-! 2023/01/11 : NEED change !
 
     // overall avg. throughput, satisfaction, and satisfaction variance
     double avg_throughput = 0.0;
@@ -375,11 +428,15 @@ int main(int argc, char *argv[])
     std::cout << "avg. satisfaction: " << avg_satisfaction << std::endl;
     std::cout << "variance of satisfaction: " << avg_variance_of_satis << std::endl;
     std::cout << "execution time: " << exec_time << std::endl << std::endl;
+    */
 
 
     /*
      * OUTPUT THE RESULTS TO .CSV FILES
      */
+    /*
+    !*-*-TODO*-*-! 2023/01/11 : NEED change !
+
     std::fstream output;
 
     if (period.length() != 0)
@@ -398,6 +455,7 @@ int main(int argc, char *argv[])
     }
 
     output.close();
+    */
     Simulator::Destroy();
 }
 

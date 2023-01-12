@@ -36,6 +36,7 @@ void installRfApMobility(NodeContainer &RF_AP_node) {
 
 
 /*
+    //1//
     install the mobility of VLC AP  : 6x6
 
                          ^
@@ -48,18 +49,29 @@ void installRfApMobility(NodeContainer &RF_AP_node) {
         *(0)  *(1)  *(2) | *(3)  *(4)  *(5)
 
 */
+/*
+    //2//
+    install the mobility of VLC AP  : 2x2
+
+                ^
+         *(2)   |   *(3)
+     ----------------------->
+         *(0)   |   *(1)
+
+*/
+
 void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     MobilityHelper VLC_AP_mobility;
     Ptr<ListPositionAllocator> VLC_AP_pos_list = CreateObject<ListPositionAllocator>();
 
-    double delta = room_size / VLC_AP_per_row; // 24/6
+    double delta = room_size / VLC_AP_per_row; // 24/6 , 5/2
     for (int i = 0; i < VLC_AP_num; i++) {
         double x = (i%VLC_AP_per_row + 1) * delta;
         double y = (i/VLC_AP_per_row + 1) * delta;
 
         // change origin from left-down to the center
-        x -= room_size / 2 + 2;
-        y -= room_size / 2 + 2;
+        x -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
+        y -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
 
         VLC_AP_pos_list->Add(Vector(x, y, VLC_AP_height));
     }
@@ -89,17 +101,18 @@ void installUeMobility(NodeContainer &UE_nodes) {
     std::stringstream ssPos;
     ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
 
-    // choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
+    //
+    /* //1// : choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
     srand (time(NULL));
-    String arr[4] = {"0.5","1","1.5","1"};
+    std::string arr[4] = {"0.5","1","1.5","1"};
     int random_index = rand()%4;
-    String z = arr[random_index];
+    std::string z = arr[random_index];*/
 
     // set an attribute to be set during construction
     pos.Set("X", StringValue(ssPos.str()));
     pos.Set("Y", StringValue(ssPos.str()));
-    //* pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=1.5]"));
-    pos.Set("Z",StringValue(z));
+    pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    //1// pos.Set("Z",StringValue(z));
 
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
     UE_mobility.SetPositionAllocator(position_allocator);

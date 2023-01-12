@@ -22,7 +22,7 @@ void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matr
 
 void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector);
 
-void printRFSINRMatrix(std::vector<double> &RF_SINR_vector);
+void printRFSINRVector(std::vector<double> &RF_SINR_vector);
 
 void printRFDataRateVector(std::vector<double> &RF_data_rate_vector);
 

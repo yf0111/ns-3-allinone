@@ -17,7 +17,7 @@
 
 
 
-std::vector<int> initializedStep(std::vector<double> &RF_data_rate_vector,
+/*std::vector<int> initializedStep(std::vector<double> &RF_data_rate_vector,
                                 std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix,
                                 std::vector<std::vector<int>> &local_AP_association_matrix,
                                 std::vector<std::vector<double>> &throughtput_per_iteration){
@@ -86,7 +86,35 @@ std::vector<int> initializedStep(std::vector<double> &RF_data_rate_vector,
 
     return connected_AP;
 }
+*/
 
+void benchmarkMethod(int &state,
+                       NodeContainer &RF_AP_node,
+                       NodeContainer &VLC_AP_nodes,
+                       NodeContainer &UE_nodes,
+                       std::vector<std::vector<double>> &VLC_LOS_matrix,
+                       std::vector<std::vector<double>> &VLC_SINR_matrix,
+                       std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                       std::vector<double> &RF_channel_gain_vector,
+                       std::vector<double> &RF_SINR_vector,
+                       std::vector<double> &RF_data_rate_vector,
+                       std::vector<std::vector<int>> &AP_association_matrix,
+                       std::vector<MyUeNode> &my_UE_list)
+{
+    /*
+        calculate VLC LOS and VLC SINR / RF LOS and RF SINR
+    */
+    precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
+
+
+
+}
+
+
+/*std::vector<int> initializedStep(std::vector<std::vector<double>> VLC_SINR_matrix,
+                                 std::vector<std::vector<double>> RF_SINR_vector){
+
+}*/
 
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,

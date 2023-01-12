@@ -19,12 +19,16 @@
 
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 5;
-//* const double time_period = 0.5; // sec
-//* const int state_num = 1000;
+const double time_period = 0.5; // sec
+const int state_num = 1;
 
 
 /*
     RF AP
+
+    noise power spectral density unit should be A^2/Hz
+    reference to 傑閔學長 : power spectral density = -75dBm/MHz  ~=  3.16e-11 A^2/MHz
+
 */
 const int RF_AP_num = 1;
 const int RF_AP_height = 3; // m
@@ -33,7 +37,7 @@ const int RF_AP_subchannel = 32; // number of sub channel
 //1//const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
 const double RF_AP_power = 20; // dBm
 //1//const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
-const double RF_noise_power_spectral_density = -75; // dBm/MHz
+const double RF_noise_power_spectral_density = 3.16e-11; // dBm/MHz -> A^2/Hz
 
 
 /*
@@ -46,7 +50,7 @@ const int VLC_AP_power = 3; //*-*-TEMP*-*-! transmitted optical power of a LiFi 
 const int VLC_AP_bandwidth = 40; // MHz
 const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
 //1//const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
-const double VLC_noise_power_spectral_density = -210; // dBm/MHz
+const double VLC_noise_power_spectral_density = 8.848e-11; // dBm/MHz -> A^2/Hz
 const double conversion_efficiency = 0.53; // A/W  optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 // these values are found in "Resource Allocation in LiFi OFDMA Systems"
@@ -58,9 +62,9 @@ const double conversion_efficiency = 0.53; // A/W  optical to electrical convers
 /*
     UE : not change yet
 */
-const int UE_num = 150;
+const int UE_num = 10;
 const int demand_upper_bound = 100;
-const double UE_height = 1.5;
+const double UE_height = 0;
 const double avg_speed = 1.0; // m/s
 const double pause_time = 0.0;
 
@@ -88,14 +92,15 @@ const int breakpoint_distance = 5; //m
 
 /*
     random orientation angle
+    2023/01/11 : UE random orientation
 */
-//* const double coherence_time = 130.0; // ms
-//* const double sampling_time = 13.0; // ms
-//* const double angle_mean = 30.0; // degree
-//* const double angle_variance = 7.78; // degree
-//* const double c_1 = pow(0.05, sampling_time/coherence_time);
-//* const double c_0 = (1.0 - c_1) * angle_mean;
-//* const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
+const double coherence_time = 130.0; // ms
+const double sampling_time = 13.0; // ms
+const double angle_mean = 30.0; // degree
+const double angle_variance = 7.78; // degree
+const double c_1 = pow(0.05, sampling_time/coherence_time);
+const double c_0 = (1.0 - c_1) * angle_mean;
+const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
 
 
 /*
@@ -109,6 +114,6 @@ const int breakpoint_distance = 5; //m
 /*
     the period of PCSBM (in states)
 */
-//* const int complete_config_period = state_num;
+const int complete_config_period = state_num;
 
 #endif // GLOBAL_CONFIGURATION_H
