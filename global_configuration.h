@@ -12,15 +12,16 @@
     //2// means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi-WiFi network using a novel Link Aggregation Framework
 */
 
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
+#define LASINR 1
 #define PCSBM 1 // can change
 
 
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 5;
 const double time_period = 0.5; // sec
-const int state_num = 1;
+const int state_num = 1000;
 
 
 /*
@@ -68,7 +69,7 @@ const double conversion_efficiency = 0.53; // A/W  optical to electrical convers
     !*-*-NOTICE*-*-! 20230113 : demand_upper_bound NEED change
 */
 const int UE_num = 10;
-const int demand_upper_bound = 100;
+//* const int demand_upper_bound = 100;
 const double UE_height = 0;
 //* const double avg_speed = 1.0; // m/s
 //* const double pause_time = 0.0;
@@ -128,4 +129,6 @@ const int complete_config_period = state_num;
 */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
+const double require_data_rate_threshold = 20; //Mbps
+
 #endif // GLOBAL_CONFIGURATION_H

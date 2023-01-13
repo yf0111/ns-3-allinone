@@ -38,13 +38,14 @@ void printUePosition(std::vector<MyUeNode> &my_UE_list);
 
 void printMyUeList(std::vector<MyUeNode> &my_UE_list);
 
-void printResourceUnitMatrix(std::vector<std::vector<std::vector<int>>> &resource_unit_matrix, int VLC_AP_index);
-
-void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix);
-
-void printBlockedUE(std::vector<int> &blocked_UE);
-
 void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers);
 
 void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector);
+
+//* void printResourceUnitMatrix(std::vector<std::vector<std::vector<int>>> &resource_unit_matrix, int VLC_AP_index);
+
+//* void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix);
+
+//* void printBlockedUE(std::vector<int> &blocked_UE);
+
 #endif

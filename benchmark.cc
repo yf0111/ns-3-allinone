@@ -43,15 +43,18 @@ void benchmarkMethod(int &state,
     */
     precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
 
+#if LASINR
     /*
         algorithm 1 , LA-SINR
     */
-    //LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
-
+    LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+#else
     /*
         algorithm 2 , LA-EQOS
     */
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+#endif // LASINR
+
 
 }
 
@@ -236,6 +239,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
 #endif // DEBUG_MODE
 
     updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
+
 }
 
 

@@ -84,16 +84,15 @@ std::vector<double> RF_channel_gain_vector(UE_num, 0.0);
 std::vector<double> RF_SINR_vector(UE_num, 0.0);
 std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
 
-
-std::vector<double> recorded_RF_ratio(state_num, 0.0); // the number of UEs that the RF AP serves in each state
-std::vector<double> recorded_avg_satisfaction_per_UE(UE_num, 0.0);
-std::vector<double> recorded_avg_throughput_per_UE(UE_num, 0.0);
-std::vector<double> recorded_fairness_of_throughput_per_state(state_num, 0.0);
-std::vector<double> recorded_variance_of_satisfaction_per_state(state_num, 0.0);
+/*
+    performance evaluation
+*/
+std::vector<double> recorded_average_outage_probability(state_num,0.0); // UE average outage probability
+std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average data rate
 
 /*
     !*-*-NEW*-*-!
-    //2// : LA-SINR
+    //2// : for reference 2
 */
 std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
 
@@ -154,7 +153,10 @@ static void initialize() {
 
     UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
 
-#if DEBUG_MODE
+    recorded_average_outage_probability = std::vector<double>(state_num,0.0);
+    recorded_average_data_rate = std::vector<double>(state_num,0.0);
+
+/*#if DEBUG_MODE
     bool VLC_init = true,RF_init = true;
     for(int i=0;i<VLC_AP_num;i++){
         for(int j=0;j<UE_num;j++){
@@ -179,13 +181,8 @@ static void initialize() {
     if(RF_init){
         std::cout<<" RF initialize success ! "<<std::endl;
     }
-#endif // DEBUG_MODE
+#endif // DEBUG_MODE*/
 
-    recorded_avg_satisfaction_per_UE = std::vector<double> (UE_num, 0.0);
-    recorded_avg_throughput_per_UE =  std::vector<double> (UE_num, 0.0);
-    recorded_fairness_of_throughput_per_state = std::vector<double> (state_num, 0.0);
-    recorded_variance_of_satisfaction_per_state = std::vector<double> (state_num, 0.0);
-    recorded_RF_ratio = std::vector<double> (state_num, 0.0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -210,7 +207,7 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 {
 #if DEBUG_MODE
 
-    std::cout << "state: " << state << "\n";
+    std::cout << "state : " << state << "\n";
 
 #endif
 
@@ -234,79 +231,46 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
     // !*-*-TODO*-*-! 2023/01/11 : NEED change !
 
-
-    // 1. calculate the ratio of UEs connected to the RF AP to the total UEs
-    int RF_cnt = 0;
-
-    for (int i = 0; i < AP_association_matrix[0].size(); i++) {
-        if (AP_association_matrix[0][i] == 1)
-            RF_cnt++;
+    // step 1. calculate UE average outage probability
+    int outage_UE_number = 0;
+    for(int i = 0 ; i < UE_num ; i++){
+        /*
+            !*-*-CHECK*-*-! 2023/01/13 : check UE_final_data_rate_vector Unit is Mbps?
+        */
+        if(UE_final_data_rate_vector[i] < require_data_rate_threshold){
+            outage_UE_number += 1;
+        }
     }
-    recorded_RF_ratio[state] = (double)RF_cnt / UE_num;
+    recorded_average_outage_probability[state] = (double) outage_UE_number / UE_num;
 
-
-    // 2. calculate the avg. data rate and satisfaction of the current state
-    double avg_data_rate = 0.0;
-    double avg_satisfaction = 0.0;
-
-    for (int i = 0; i < my_UE_list.size(); i++) {
-        avg_data_rate += my_UE_list[i].getLastThroughput();
-        avg_satisfaction += my_UE_list[i].getLastSatisfaction();
+    // step 2. calculate UE average data rate
+    double total_UE_data_rate = 0;
+    for(int i = 0 ; i < UE_num ; i++){
+        total_UE_data_rate += UE_final_data_rate_vector[i];
     }
-    avg_data_rate = avg_data_rate / UE_num;
-    avg_satisfaction = avg_satisfaction / UE_num;
+    recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
 
-
-    // 3. calculate the variance of satisfaction
-    double variance_of_satisfaction = 0.0;
-
-    for (int i = 0; i < UE_num; i++) {
-        double satisfaction = my_UE_list[i].getLastSatisfaction();
-
-        variance_of_satisfaction += std::pow(satisfaction - avg_satisfaction, 2);
-    }
-
-    variance_of_satisfaction /= UE_num;
-    recorded_variance_of_satisfaction_per_state[state] = variance_of_satisfaction;
-
-
-    // 4. calculate the fairness of throughput
-    double throughput_fairness = 0.0;
-    double square_of_sum = 0.0;
-    double sum_of_square = 0.0;
-
-    for (int i = 0; i < UE_num; i++) {
-        double throughput = my_UE_list[i].getLastThroughput();
-
-        square_of_sum += throughput;
-        sum_of_square += pow(throughput, 2);
-    }
-
-    square_of_sum = pow(square_of_sum, 2);
-    throughput_fairness = square_of_sum / (UE_num * sum_of_square);
-    recorded_fairness_of_throughput_per_state[state] = throughput_fairness;
 
 
 
 // !*-*-TODO*-*-! 2023/01/11 : NEED change
 #if DEBUG_MODE
     std::cout << "state " << state << std::endl;
-    std::cout << "avg throughput: " << avg_data_rate << ", ";
-    std::cout << "throughput fairness: " << throughput_fairness << std::endl;
-    std::cout << "avg satisfaction: " << avg_satisfaction << ", ";
-    std::cout << "variance of satisfaction: " << variance_of_satisfaction << ", ";
-    std::cout << "RF connection ratio: " << recorded_RF_ratio[state]* 100 << "%" << std::endl << std::endl;
+    std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
+    std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
 #endif // DEBUG_MODE
 
 
     // use another storage to keep UE's information
     // since somehow get nothing when accessing these information through my_UE_list after Simulator::Run()
+    /*
+    2023/01/13 : NEED change !
     if (state == state_num - 1) {
         for (int i = 0; i < my_UE_list.size(); i++) {
             recorded_avg_throughput_per_UE[i] = my_UE_list[i].calculateAvgThroughput();
             recorded_avg_satisfaction_per_UE[i] = my_UE_list[i].calculateAvgSatisfaction();
         }
-    }
+    }*/
 
 
     if (!Simulator::IsFinished())
@@ -366,101 +330,56 @@ int main(int argc, char *argv[])
 
 
     /*
-     * AFTER SIMULATION, CALCULATE OVERALL THROUGHPUT, FAIRNESS INDEX AND SATISFACTION
+     * AFTER SIMULATION, CALCULATE OVERALL AVERAGE OUTAGE PROBABILITY, AVERAGE DATA RATE //2//
      */
 
-    // !*-*-TODO*-*-! 2023/01/11 : NEED change !
-
-    // overall avg. throughput, satisfaction, and satisfaction variance
-    double avg_throughput = 0.0;
-    double avg_satisfaction = 0.0;
-    double avg_variance_of_satis = 0.0;
-
-    for (int i = 0; i < UE_num; i++) {
-        avg_throughput += recorded_avg_throughput_per_UE[i];
-        avg_satisfaction += recorded_avg_satisfaction_per_UE[i];
+    // overall avg. outage probability
+    double avg_outage_probability = 0.0;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_outage_probability += recorded_average_outage_probability[i];
     }
-    avg_throughput = avg_throughput / UE_num;
-    avg_satisfaction = avg_satisfaction / UE_num;
+    avg_outage_probability = avg_outage_probability / state_num;
 
-    for (int i = 0; i < state_num; i++) {
-        avg_variance_of_satis += recorded_variance_of_satisfaction_per_state[i];
+    // overall avg. data rate
+    double avg_data_rate = 0.0;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_data_rate += recorded_average_data_rate[i];
     }
-    avg_variance_of_satis /= state_num;
-
-
-    // average percentage of WiFi connections
-    double avg_RF_ratio = 0.0;
-    for (int i = 0; i < recorded_RF_ratio.size(); i++)
-        avg_RF_ratio += recorded_RF_ratio[i];
-
-    avg_RF_ratio = (avg_RF_ratio / recorded_RF_ratio.size()) * 100;
-
+    avg_data_rate = avg_data_rate / state_num;
 
     // calculate the actual executing time
     struct timespec tmp = diff(start, end);
     double exec_time = tmp.tv_sec + (double) tmp.tv_nsec / 1000000000.0;
 
 
-    std::string method, period;
+    std::string method;
+    if(PROPOSED_METHOD){
 
-    if (PROPOSED_METHOD) {
-        if (PCSBM && complete_config_period == state_num) {
-            method = "PCSBM";
+    }
+    else{
+        if(LASINR){
+            method = "benchmark-ref2-LASINR";
         }
-        else if (PCSBM && complete_config_period != state_num) {
-            method = "Hybrid";
-
-            if (complete_config_period > 0) {
-                period = "1," + std::to_string(complete_config_period - 1);
-            }
-            else {
-                period = std::to_string(-1*complete_config_period - 1) + ",1";
-            }
-        }
-        else {
-            method = "FSCBM";
+        else{
+            method = "benchmark-ref2-LAEQOS";
         }
     }
-    else {
-        method = "benchmark";
-    }
-
-    std::cout << "In this simulation (" << method << ", UE=" << std::to_string(UE_num)
-                                                << ", demand=(1, " << std::to_string(demand_upper_bound) << ")";
-
-    if (period.length() != 0)
-        std::cout << ", period=" << period << ")\n";
-    else
-        std::cout << ")\n";
-
-    std::cout << "avg. throughput: " << avg_throughput << " Mbps" << std::endl;
-    std::cout << "avg. satisfaction: " << avg_satisfaction << std::endl;
-    std::cout << "variance of satisfaction: " << avg_variance_of_satis << std::endl;
-    std::cout << "execution time: " << exec_time << std::endl << std::endl;
 
 
+    std::cout << "In this simulation :(" << method << "), UE=" << std::to_string(UE_num) << ", execution time: " << exec_time << std::endl << std::endl;
 
     /*
      * OUTPUT THE RESULTS TO .CSV FILES
      */
 
-    //!*-*-TODO*-*-! 2023/01/11 : NEED change !
-
     std::fstream output;
-
-    if (period.length() != 0)
-        output.open(path + method + "(UE=" + std::to_string(UE_num) + ",demand=(1, " + std::to_string(demand_upper_bound) + ")"
-                                    ",period=" + period + ").csv", std::ios::out | std::ios::app);
-    else
-        output.open(path + method + "(UE=" + std::to_string(UE_num) + ",demand=(1, " + std::to_string(demand_upper_bound) + ")).csv", std::ios::out | std::ios::app);
-
+    output.open(path + method + ",UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
     if (!output.is_open()) {
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);
     }
     else {
-        output << avg_throughput << "," << avg_satisfaction << "," << avg_variance_of_satis << "," << exec_time << ",";
+        output << avg_outage_probability << "," << avg_data_rate;
         output << std::endl;
     }
 

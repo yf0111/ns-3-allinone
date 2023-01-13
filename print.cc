@@ -207,41 +207,6 @@ void printMyUeList(std::vector<MyUeNode> &my_UE_list) {
     }
 }
 
-void printResourceUnitMatrix(std::vector<std::vector<std::vector<int>>> &resource_unit_matrix, int VLC_AP_index) {
-    std::cout << "RU Matrix of VLC AP " << VLC_AP_index << " as below: " << std::endl;
-
-    for (int i = 0; i < resource_unit_matrix[VLC_AP_index].size(); i++) {
-        for (int j = 0; j < resource_unit_matrix[VLC_AP_index][i].size(); j++) {
-            std::cout << std::setw(4) << resource_unit_matrix[VLC_AP_index][i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
-void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix) {
-    std::cout << "RU Matrix: " << std::endl;
-
-    for (int i = 0; i < RU_matrix.size(); i++) {
-        for (int j = 0; j < RU_matrix[i].size(); j++) {
-            std::cout << std::setw(4) << RU_matrix[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
-void printBlockedUE(std::vector<int> &blocked_UE) {
-    std::cout << "Blocked UE as below: " << std::endl;
-
-    std::sort(blocked_UE.begin(), blocked_UE.end());
-
-    for (int i = 0; i < blocked_UE.size(); i++)
-        std::cout << blocked_UE[i] << " ";
-
-    std::cout << std::endl;
-}
-
 void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers){
     std::cout<<"AP Serve UE number as below : "<<std::endl;
     for(int i=0;i<RF_AP_num+VLC_AP_num;i++){
@@ -257,3 +222,38 @@ void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
     }
     std::cout<<std::endl;
 }
+
+/*void printResourceUnitMatrix(std::vector<std::vector<std::vector<int>>> &resource_unit_matrix, int VLC_AP_index) {
+    std::cout << "RU Matrix of VLC AP " << VLC_AP_index << " as below: " << std::endl;
+
+    for (int i = 0; i < resource_unit_matrix[VLC_AP_index].size(); i++) {
+        for (int j = 0; j < resource_unit_matrix[VLC_AP_index][i].size(); j++) {
+            std::cout << std::setw(4) << resource_unit_matrix[VLC_AP_index][i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}*/
+
+/*void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix) {
+    std::cout << "RU Matrix: " << std::endl;
+
+    for (int i = 0; i < RU_matrix.size(); i++) {
+        for (int j = 0; j < RU_matrix[i].size(); j++) {
+            std::cout << std::setw(4) << RU_matrix[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}*/
+
+/*void printBlockedUE(std::vector<int> &blocked_UE) {
+    std::cout << "Blocked UE as below: " << std::endl;
+
+    std::sort(blocked_UE.begin(), blocked_UE.end());
+
+    for (int i = 0; i < blocked_UE.size(); i++)
+        std::cout << blocked_UE[i] << " ";
+
+    std::cout << std::endl;
+}*/
