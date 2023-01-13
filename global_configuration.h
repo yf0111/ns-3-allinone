@@ -20,24 +20,28 @@
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 5;
 const double time_period = 0.5; // sec
-const int state_num = 5;
+const int state_num = 1;
 
 
 /*
     RF AP
-
-    noise power spectral density unit should be A^2/Hz
-    reference to 傑閔學長 : power spectral density = -75dBm/MHz  ~=  3.16e-11 A^2/MHz
-
 */
 const int RF_AP_num = 1;
 const int RF_AP_height = 3; // m
 const int RF_AP_bandwidth = 20; //MHz
 const int RF_AP_subchannel = 32; // number of sub channel
 //1//const double RF_AP_power = 6.7; //W !*-*-TEMP*-*-!
-const double RF_AP_power = 20; // dBm
+const double RF_AP_power = 0.1; // W
 //1//const double RF_noise_power_spectral_density = 173e-6; //N^RF_0 = 173 dBm/Hz = 173e-6 dBm/MHz
-const double RF_noise_power_spectral_density =  1e-21; // dBm/MHz -> A^2/Hz 3.1622776602e-11
+const double RF_noise_power_spectral_density =  3.16e-11; // -75 dBm/MHz ~= 3.16e-11 A^2/MHz
+
+/*
+dBm -> A^2
+
+https://www.convertworld.com/zh-hant/power/dbm.html
+dBm -> W = A^2 * Ω
+( Ω = 1 )
+*/
 
 
 /*
@@ -50,7 +54,7 @@ const int VLC_AP_power = 3; //*-*-TEMP*-*-! transmitted optical power of a LiFi 
 const int VLC_AP_bandwidth = 40; // MHz
 const int VLC_AP_subchannel = 16; // *-*-QUESTION*-*-! sub channel = sub carrier ?
 //1//const double VLC_noise_power_spectral_density = 1e-15;  //N^VLC_0 = 1e-21 A^2/Hz = 1e-15 A^2/MHz
-const double VLC_noise_power_spectral_density = 1e-21; // dBm/MHz -> A^2/Hz 8.848e-11
+const double VLC_noise_power_spectral_density = 1e-24; // -210 dBm/MHz ~= 1e-24 A^2/MHz
 const double conversion_efficiency = 0.53; // A/W  optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 // these values are found in "Resource Allocation in LiFi OFDMA Systems"
@@ -60,13 +64,14 @@ const double conversion_efficiency = 0.53; // A/W  optical to electrical convers
 
 
 /*
-    UE : not change yet
+    UE
+    !*-*-NOTICE*-*-! 20230113 : demand_upper_bound NEED change
 */
 const int UE_num = 10;
 const int demand_upper_bound = 100;
 const double UE_height = 0;
-const double avg_speed = 1.0; // m/s
-const double pause_time = 0.0;
+//* const double avg_speed = 1.0; // m/s
+//* const double pause_time = 0.0;
 
 /*
     VLC channel
@@ -118,7 +123,9 @@ const int complete_config_period = state_num;
 
 
 /*
-    LA-SINR //2//
+    for ref 2
+    //2//
 */
 const double la_overhead = 0.8;
+const int LA_UE_num = 4;
 #endif // GLOBAL_CONFIGURATION_H

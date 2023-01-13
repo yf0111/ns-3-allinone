@@ -251,9 +251,9 @@ void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers){
 }
 
 void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
-    std::cout<<"LA-SINR UE final data rate as below : "<<std::endl;
+    std::cout<<"UE final data rate as below : "<<std::endl;
     for(int i=0;i<UE_num;i++){
-        std::cout<<"UE "<<i<<" data rate is :"<<UE_final_data_rate_vector[i]<<"\n";
+        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<"UE "<<i<<" data rate is :"<<UE_final_data_rate_vector[i]<<"\n";
     }
     std::cout<<std::endl;
 }
