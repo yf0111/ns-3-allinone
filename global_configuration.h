@@ -14,7 +14,7 @@
 
 #define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
-#define LASINR 1
+#define LASINR 0
 #define PCSBM 1 // can change
 
 
@@ -120,7 +120,7 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 /*
     the period of PCSBM (in states)
 */
-const int complete_config_period = state_num;
+// const int complete_config_period = state_num;
 
 
 /*
@@ -129,6 +129,6 @@ const int complete_config_period = state_num;
 */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
-const double require_data_rate_threshold = 20; //Mbps
+const double require_data_rate_threshold = 40; //Mbps
 
 #endif // GLOBAL_CONFIGURATION_H

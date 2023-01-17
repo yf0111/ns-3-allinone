@@ -228,15 +228,9 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
     /* CALCULATION OF PERFORMANCE METRICS */
 
-
-    // !*-*-TODO*-*-! 2023/01/11 : NEED change !
-
     // step 1. calculate UE average outage probability
     int outage_UE_number = 0;
     for(int i = 0 ; i < UE_num ; i++){
-        /*
-            !*-*-CHECK*-*-! 2023/01/13 : check UE_final_data_rate_vector Unit is Mbps?
-        */
         if(UE_final_data_rate_vector[i] < require_data_rate_threshold){
             outage_UE_number += 1;
         }
@@ -251,9 +245,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
 
 
-
-
-// !*-*-TODO*-*-! 2023/01/11 : NEED change
 #if DEBUG_MODE
     std::cout << "state " << state << std::endl;
     std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
@@ -373,7 +364,7 @@ int main(int argc, char *argv[])
      */
 
     std::fstream output;
-    output.open(path + method + ",UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    output.open(path + method + ",UE=" + std::to_string(UE_num) + ",LA=" + std::to_string(LA_UE_num) + ".csv", std::ios::out | std::ios::app);
     if (!output.is_open()) {
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);

@@ -277,7 +277,7 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         auto H_comp = ( 0.7071067811 * (cos(irradiance_angle) + ( j * sin(irradiance_angle))) ) + (0.7071067811 * X);
         H = real(H_comp)*real(H_comp) - imag(H_comp) * imag(H_comp);
         /*
-            2023/01/12 : leaf of imag part
+            2023/01/12 : leak of imag part
         */
     }
     else{
