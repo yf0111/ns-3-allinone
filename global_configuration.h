@@ -14,14 +14,14 @@
 
 #define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
-#define LASINR 0
+#define LASINR 1
 #define PCSBM 1 // can change
 
 
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 5;
 const double time_period = 0.5; // sec
-const int state_num = 1000;
+const int state_num = 1;
 
 
 /*
@@ -87,7 +87,7 @@ const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
 /*
     RF Channel
 */
-const double RF_carrier_frequency = 2.4; // GHz !*-*-NOICE*-*-! : USE where?
+const double RF_carrier_frequency = 2.4; // GHz
 const int breakpoint_distance = 5; //m
 
 /*
@@ -124,11 +124,10 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 
 
 /*
-    for ref 2
-    //2//
+    for ref'2
 */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
-const double require_data_rate_threshold = 40; //Mbps
+const double require_data_rate_threshold = 5; //Mbps
 
 #endif // GLOBAL_CONFIGURATION_H

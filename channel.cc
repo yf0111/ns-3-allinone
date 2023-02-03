@@ -19,9 +19,13 @@
 
 static const double lambertian_coefficient = (-1) / (log2(cos(degree2Radian(PHI_half)))); // m
 static const double concentrator_gain = pow(refractive_index, 2) / pow(sin(degree2Radian(field_of_view / 2)), 2);
+bool first_time = true; // used for Gaussian distribution in RF's Channel gain
+double X = 0.0 , H = 0.0 ,p; // Xσ in RF channel , ref'2
 
 /*
-    VLC LOS !*-*-NOTICE*-*-! 2023/01/10 : benchmark LOS = Channel Gain (?) , don't have front-end response
+    VLC LOS
+    !*-*-NOTICE*-*-! 2023/01/10 : ref'1 LOS = Channel Gain (?)
+    !*-*-TODO*-*-! 2023/02/03 : ref'1 should calculate front-end response
 
 */
 double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &VLC_LOS_matrix) {
@@ -190,7 +194,7 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int 
 }
 
 /*
-    2023/01/09 : My benchmark don't have this , !*-*-NOTICE*-*- : if sub channel == sub carrier then can turn sub carrier into sun channel
+    2023/01/09 : ref'1 don't have this  !*-*-NOTICE*-*- : if sub channel == sub carrier then can turn sub carrier into sun channel
 */
 // front-end
 // H_F(k) = exp( -(k * modulation_bandwidth) / (subcarrier_num * fitting_coefficient * 3dB_cutoff)) based on revised (4)
@@ -201,7 +205,7 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int 
 
 /*
     VLC data rate
-    2023/01/10 : VLC data rate function is useless for //2//
+    !*-*-NOTICE*-*-! 2023/01/10 : VLC data rate function is useless for ref'2
 */
 void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<double>> &VLC_data_rate_matrix) {
     for (int i = 0; i < VLC_AP_num; i++) {
@@ -247,7 +251,7 @@ void calculateRFChannelGain(NodeContainer &RF_AP_node,NodeContainer &UE_nodes,st
 double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
 
     /*
-    //1//
+    // ref'1 //
     double distance = getDistance(RF_AP, UE_node);
     double path_loss = 18.7*log10(distance) + 46.8 + 20*log10(carrier_frequency/5);
     double path_loss_power = -(path_loss)/10;
@@ -255,35 +259,47 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
     return rf_los_channel_gain;
     */
 
-    //2//
+    // ref'2 //
     double distance = getDistance(RF_AP,UE_node);
-    std::normal_distribution<double> Gaussian (0.0,1);  // Gaussian distribution : X is a Gaussian random variable with zero mean and standard deviation σ
-    std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
     /*
-    σ before break_distance : 3 dB
-    σ after break_distance : 5 dB
+    Gaussian distribution
+        Xσ is a Gaussian random variable with zero mean and standard deviation σ
+            σ before break_distance : 3 dB
+            σ after break_distance : 5 dB
     */
-    double X=0.0;
-    for(int i=0;i<100000;i++){
-        X += Gaussian(gen);
-    }
-    X/=100000;
+    std::normal_distribution<double> Gaussian_before(0.0,3);  // Xσ (before)
+    std::normal_distribution<double> Gaussian_after(0.0,5); // Xσ (after)
+    std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
+    boost::math::rayleigh_distribution<double> rayleigh(0.8);
+    std::uniform_real_distribution<double> random_p(0.0, 1.0);
 
-    std::complex<double> j {0, 1};
-    double L_d,H;
-    const double irradiance_angle = getIrradianceAngle(RF_AP, UE_node);
-    if(distance < breakpoint_distance){
-        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5 + X;
-        auto H_comp = ( 0.7071067811 * (cos(irradiance_angle) + ( j * sin(irradiance_angle))) ) + (0.7071067811 * X);
-        H = real(H_comp)*real(H_comp) - imag(H_comp) * imag(H_comp);
-        /*
-            2023/01/12 : leak of imag part
-        */
+    if(first_time){
+        if(distance <= breakpoint_distance){
+            for(int i = 0; i<100000 ; i++){
+                X += Gaussian_before(gen);
+                p = random_p(gen);
+                H += quantile(rayleigh,p);
+            }
+        }
+        if(distance > breakpoint_distance){
+            for(int i = 0; i<100000 ; i++){
+                X += Gaussian_after(gen);
+                p = random_p(gen);
+                H += quantile(rayleigh,p);
+            }
+        }
+        X /= 100000;
+        H /= 100000;
+        first_time = false;
+    }
+
+    double L_d;
+
+    if(distance <= breakpoint_distance){
+        L_d = 20 * log10(distance) + 20 * log10(RF_carrier_frequency) - 147.5 + X;
     }
     else{
-        L_d = 20 * log10(RF_carrier_frequency*distance) - 147.5 + 35 * log10( distance / breakpoint_distance ) + X ;
-        auto H_comp = 0 * cos(irradiance_angle) + ( j * sin(irradiance_angle)) + 0 * X ;
-        H = real(H_comp)*real(H_comp) - imag(H_comp) * imag(H_comp);
+        L_d = 20 * log10(distance) + 20 * log10(RF_carrier_frequency) - 147.5 + 35 * log10(distance / breakpoint_distance) + X;
     }
     double rf_los_channel_gain = pow(H,2) * pow(10,((-1)*L_d)/10.0);
     return rf_los_channel_gain;
@@ -318,7 +334,7 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector, int UE_ind
 
 /*
     RF data rate
-    2023/01/10 : RF data rate function is useless for //2//
+    !*-*-NOTICE*-*-! 2023/01/10 : RF data rate function is useless for ref'2
 */
 double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector , int UE_index){
     /*
@@ -352,6 +368,7 @@ void precalculation(NodeContainer  &RF_AP_node,
     calculateAllVlcLightOfSight(VLC_AP_nodes, UE_nodes, my_UE_list, VLC_LOS_matrix);
     calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix);
     //calculateAllVlcDataRate(VLC_SINR_matrix, VLC_data_rate_matrix);
+
 #if DEBUG_MODE
     printVlcLosMatrix(VLC_LOS_matrix);
     printVlcSinrMatrix(VLC_SINR_matrix);
@@ -363,8 +380,8 @@ void precalculation(NodeContainer  &RF_AP_node,
     //calculateALLRFDataRate(RF_SINR_vector,RF_data_rate_vector);
 
 #if DEBUG_MODE
-    printRFChannelGainVector(RF_channel_gain_vector);
-    printRFSINRVector(RF_SINR_vector);
+    //printRFChannelGainVector(RF_channel_gain_vector);
+    //printRFSINRVector(RF_SINR_vector);
     //printRFDataRateVector(RF_data_rate_vector);
 #endif
 }

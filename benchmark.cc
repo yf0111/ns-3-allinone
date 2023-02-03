@@ -5,6 +5,7 @@
 #include <random>
 #include <chrono>
 #include <algorithm>
+#include <float.h>
 
 #include "print.h"
 #include "channel.h"
@@ -67,29 +68,29 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
 
-    // step 1 : AP association using stand alone WiFi formula (9) and stand LiFi formula (11)
+    // step 1 : AP association using stand alone WiFi formula (9) and stand alone LiFi formula (11)
     for(int i = 0 ; i < UE_num ; i++){
         local_AP_association_matrix[0][i] = 1 ;
     }
 
-    for(int i = 0 ; i < UE_num ; i++){
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         int max_AP_index = 0;
-        int max_AP_SINR_value = INT_MIN;
-        for(int j = 0 ; j < VLC_AP_num ; j++){
-            if(VLC_SINR_matrix[j][i] > max_AP_SINR_value){
-                max_AP_SINR_value = VLC_SINR_matrix[j][i];
-                max_AP_index = j+1;
+        double max_AP_SINR_value = -DBL_MAX;
+        for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+            if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
+                max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+                max_AP_index = VLC_AP_index+1;
             }
         }
-        local_AP_association_matrix[max_AP_index][i] = 1;
+        local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
 
-/*#if DEBUG_MODE
+#if DEBUG_MODE
 
-    std::cout<<"\n after LA-SINR : \n"<<std::endl;
     printApAssociationMatrix(local_AP_association_matrix);
 
 #endif // DEBUG_MODE*/
+
 
     // step 1.5 : calculate the numbers of users served by the AP
     std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
@@ -146,16 +147,17 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
 
     // step 1 : AP association using stand LiFi formula (11)
-    for(int i = 0 ; i < UE_num ; i++){
+
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         int max_AP_index = 0;
-        int max_AP_SINR_value = INT_MIN;
-        for(int j = 0 ; j < VLC_AP_num ; j++){
-            if(VLC_SINR_matrix[j][i] > max_AP_SINR_value){
-                max_AP_SINR_value = VLC_SINR_matrix[j][i];
-                max_AP_index = j+1;
+        double max_AP_SINR_value = -DBL_MAX;
+        for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+            if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
+                max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+                max_AP_index = VLC_AP_index+1;
             }
         }
-        local_AP_association_matrix[max_AP_index][i] = 1;
+        local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
 
     // step 1.5 : calculate the numbers of users served by the AP
@@ -184,24 +186,18 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         }
         UE_final_data_rate_vector[UE_index] = vlc_data_rate;
     }
-    AP_serve_UE_numbers.clear();
 
     // step 3 : decide LA users that having lowest QoS
     // QoS : QoS in ref2. is defined as the minimum data rate a particular user can achieve.
-    std::vector<double> UE_final_data_rate_vector_sorted = UE_final_data_rate_vector;
-    sort(UE_final_data_rate_vector_sorted.begin(),UE_final_data_rate_vector_sorted.end());
-    std::vector<int> indicate_seleced(UE_num,0);
+    std::vector<double> UE_final_data_rate_vector_use = UE_final_data_rate_vector;
     for(int i = 0 ; i < LA_UE_num ; i++){
-        for(int j = 0 ; j < UE_num ; j++){
-            if(UE_final_data_rate_vector[j] == UE_final_data_rate_vector_sorted[i] && indicate_seleced[j] == 0){
-                local_AP_association_matrix[0][j] = 1;
-                indicate_seleced[j] = 1;
-                break;
-            }
-        }
+        int minPosition = min_element(UE_final_data_rate_vector_use.begin(),UE_final_data_rate_vector_use.end()) - UE_final_data_rate_vector_use.begin();
+        local_AP_association_matrix[0][minPosition] = 1;
+        UE_final_data_rate_vector_use[minPosition] = DBL_MAX;
     }
 
     // step 3.5 : calculate the numbers of users served by the AP
+    AP_serve_UE_numbers.clear();
     for(int i = 0 ; i < RF_AP_num+VLC_AP_num ; i++){
         int served_UE_number = 0;
         for(int j = 0 ; j < UE_num ; j++){
@@ -211,6 +207,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         }
         AP_serve_UE_numbers[i] = served_UE_number;
     }
+
 
     // step 4 : calculate LA user's data rate using (14)
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
@@ -232,6 +229,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         double final_data_rate = (rf_data_rate + vlc_data_rate)* la_overhead;
         UE_final_data_rate_vector[UE_index] = final_data_rate;
     }
+
 #if DEBUG_MODE
 
     printUEFinalDataRate(UE_final_data_rate_vector);
