@@ -49,12 +49,14 @@ void benchmarkMethod(int &state,
         algorithm 1 , LA-SINR
     */
     LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
-#else
+#endif // LASINR
+
+#if LAEQOS
     /*
         algorithm 2 , LA-EQOS
     */
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
-#endif // LASINR
+#endif // LAEQOS
 
 
 }

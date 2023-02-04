@@ -15,6 +15,7 @@
 #define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
 #define LASINR 1
+#define LAEQOS 0
 #define PCSBM 1 // can change
 
 
