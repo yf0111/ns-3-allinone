@@ -26,34 +26,36 @@ static const std::map<double, double, std::greater<double>> SINR_to_spectral_eff
                                                                                              {20.0,5.0}};
 
 void benchmarkMethod(int &state,
-                       NodeContainer &RF_AP_node,
-                       NodeContainer &VLC_AP_nodes,
-                       NodeContainer &UE_nodes,
-                       std::vector<std::vector<double>> &VLC_LOS_matrix,
-                       std::vector<std::vector<double>> &VLC_SINR_matrix,
-                       std::vector<std::vector<double>> &VLC_data_rate_matrix,
-                       std::vector<double> &RF_channel_gain_vector,
-                       std::vector<double> &RF_SINR_vector,
-                       std::vector<double> &RF_data_rate_vector,
-                       std::vector<std::vector<int>> &AP_association_matrix,
-                       std::vector<MyUeNode> &my_UE_list,
-                       std::vector<double> &UE_final_data_rate_vector)
+                     NodeContainer &RF_AP_node,
+                     NodeContainer &VLC_AP_nodes,
+                     NodeContainer &UE_nodes,
+                     std::vector<std::vector<double>> &VLC_LOS_matrix,
+                     std::vector<std::vector<double>> &VLC_SINR_matrix,
+                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
+                     std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                     std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d,
+                     std::vector<double> &RF_channel_gain_vector,
+                     std::vector<double> &RF_SINR_vector,
+                     std::vector<double> &RF_data_rate_vector,
+                     std::vector<std::vector<int>> &AP_association_matrix,
+                     std::vector<MyUeNode> &my_UE_list,
+                     std::vector<double> &UE_final_data_rate_vector)
 {
     /*
         calculate VLC LOS and VLC SINR and RF LOS and RF SINR
     */
-    precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
+    precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix,VLC_SINR_matrix_3d, VLC_data_rate_matrix,VLC_data_rate_matrix_3d, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
 
 #if LASINR
     /*
-        algorithm 1 , LA-SINR
+        ref'2 , LA-SINR
     */
     LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
 #endif // LASINR
 
 #if LAEQOS
     /*
-        algorithm 2 , LA-EQOS
+        ref'2 , LA-EQOS
     */
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
 #endif // LAEQOS

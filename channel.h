@@ -10,7 +10,7 @@
 using namespace ns3;
 
 
-extern int counter;
+//*extern int counter;
 
 
 /*
@@ -22,7 +22,9 @@ void precalculation(NodeContainer &RF_AP_node ,
                       NodeContainer &UE_nodes,
                       std::vector<std::vector<double>> &VLC_LOS_matrix,
                       std::vector<std::vector<double>> &VLC_SINR_matrix,
+                      std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
                       std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                      std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d,
                       std::vector<double> &RF_channel_gain_vector,
                       std::vector<double> &RF_SINR_vector,
                       std::vector<double> &RF_data_rate_vector,
@@ -43,16 +45,16 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node); // in meters
 /*
     VLC SINR
 */
-void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<std::vector<double>> &VLC_SINR_matrix);
-double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int VLC_AP_index, int UE_index);
-//* double estimateOneVlcFrontEnd(int subcarrier_index);
+void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d);
+double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int VLC_AP_index, int UE_index, std::vector<double> &front_end_vector,int subchannel_index);
+double estimateOneVlcFrontEnd(int sunchannel_index);
 
 
 /*
     VLC data rate
 */
-void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix);
-double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, int VLC_AP_index, int UE_index);
+void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,std::vector<std::vector<double>> &VLC_data_rate_matrix,std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d);
+double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,int VLC_AP_index, int UE_index,int subchannel_index);
 //* double getSpectralEfficiency(double SINR);
 
 

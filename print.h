@@ -13,12 +13,20 @@
     printVlcDataRateMatrix
     printRFChannelGainVector
     printRFSINRMatrix
+
+    !*-*-NEW*-*-! 2023/02/05
+    printVlcSinrMatrix3d
+    printVlcDataRateMatrix3d
 */
 void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix);
 
 void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix);
 
+void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d);
+
 void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matrix);
+
+void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d);
 
 void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector);
 

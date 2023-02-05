@@ -36,14 +36,27 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     std::cout << "VLC SINR matrix as below: " << std::endl;
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
+        for (int j = 0; j < UE_num; j++) {
+            std::cout << "  For UE " << j << ": \n";
+            std::cout << "  ";
+            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d){
+    std::cout << "VLC SINR matrix as below: " << std::endl;
+    for (int i = 0; i < VLC_AP_num; i++) {
+        std::cout << "For VLC AP " << i << ": \n";
 
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
-            /*for (int k = 0; k <= effective_subcarrier_num; k++) {
-                std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_SINR_matrix[i][j][k] << " ";
-            }*/
-            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
+            for (int k = 0; k <= effective_VLC_subchannel; k++) {
+                std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_SINR_matrix_3d[i][j][k] << " ";
+            }
             std::cout << std::endl;
         }
         std::cout << std::endl;
@@ -58,11 +71,23 @@ void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matr
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
-            /*for (int k = 0; k <= effective_subcarrier_num; k++) {
-                std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j][k] << " ";
-            }*/
             std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j]<< " ";
-            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d){
+    std::cout << "VLC data rate matrix as below: " << std::endl;
+    for (int i = 0; i < VLC_AP_num; i++) {
+        std::cout << "For VLC AP " << i << ": \n";
+        for (int j = 0; j < UE_num; j++) {
+            std::cout << "  For UE " << j << ": \n";
+            std::cout << "  ";
+            for (int k = 0; k <= effective_VLC_subchannel; k++) {
+                std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix_3d[i][j][k] << " ";
+            }
         }
         std::cout << std::endl;
     }
