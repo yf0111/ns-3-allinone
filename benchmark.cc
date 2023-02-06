@@ -93,7 +93,7 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 
     printApAssociationMatrix(local_AP_association_matrix);
 
-#endif // DEBUG_MODE*/
+#endif // DEBUG_MODE
 
 
     // step 1.5 : calculate the numbers of users served by the AP
