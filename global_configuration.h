@@ -14,8 +14,8 @@
 
 #define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
-#define LASINR 0
-#define LAEQOS 1
+#define LASINR 1
+#define LAEQOS 0
 #define PDSERT 0
 #define PCSBM 1 // can change
 
@@ -93,7 +93,7 @@ UE_height = a number of devices are randomly distributed at four different heigh
 /*
     VLC channel
 */
-const double field_of_view = 90.0; // degree
+const double field_of_view = 60.0; // degree // @-ref'1- 90.0@ , @-ref'2- 60.0@
 const double PHI_half = 60.0; // semi-angle at half-illumination in degree
 const double filter_gain = 1.0;
 const double refractive_index = 1.5;
@@ -106,7 +106,7 @@ const double three_dB_cutoff = 2; // MHz
 /*
     RF Channel
 */
-const double RF_carrier_frequency = 2.4e9; // GHz //
+const double RF_carrier_frequency = 2.4e9; // Hz //
 const int breakpoint_distance = 5; // m // @-ref'1- none@ , @-ref'2- 5@
 
 /*
@@ -141,7 +141,7 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
-const double require_data_rate_threshold = 25; //Mbps
+const double require_data_rate_threshold = 20; //Mbps
 
 /*
     ref'1 system parameter

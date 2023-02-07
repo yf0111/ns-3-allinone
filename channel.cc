@@ -20,7 +20,6 @@
 
 static const double lambertian_coefficient = (-1) / (log2(cos(degree2Radian(PHI_half)))); // m
 static const double concentrator_gain = pow(refractive_index, 2) / pow(sin(degree2Radian(field_of_view / 2)), 2);
-bool first_time = true; // used for Gaussian distribution in RF's Channel gain
 double X = 0.0 , H = 0.0 ,p; // Xσ in RF channel , ref'2
 
 /*
@@ -188,7 +187,7 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::
 }
 double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int VLC_AP_index, int UE_index, std::vector<double> &front_end_vector,int subchannel_index) {
     if(PDSERT && !LAEQOS && !LASINR){
-        double interference = 0;
+        double interference = 0.0;
         for(int i = 0 ; i < VLC_AP_num ; i++){
             if( i != VLC_AP_index){
                 interference += std::pow(conversion_efficiency * (VLC_LOS_matrix[VLC_AP_index][UE_index]* 250.0 / 36) * VLC_LOS_matrix[i][UE_index] * front_end_vector[subchannel_index], 2);
@@ -197,10 +196,10 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int 
         double VLC_AP_sub_bandwidth = (double)VLC_AP_bandwidth / VLC_AP_subchannel; // B^VLC_sub = B^VLC / N^VLC = VLC_AP_bandwidth / VLC_sub_channel
         double noise = VLC_AP_sub_bandwidth * VLC_noise_power_spectral_density;
         double SINR = std::pow(conversion_efficiency,2) * (VLC_LOS_matrix[VLC_AP_index][UE_index]* 250.0 / 36) * std::pow(VLC_LOS_matrix[VLC_AP_index][UE_index] * front_end_vector[subchannel_index],2) / (double)(interference + noise);
-        return SINR;
+        return SINR; //A^2
     }
     else if ((LAEQOS || LASINR) && !PDSERT){
-        double interference = 0;
+        double interference = 0.0;
         for (int i = 0; i < VLC_AP_num; i++) {
             if (i != VLC_AP_index){
                 interference += std::pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[i][UE_index],2);
@@ -208,7 +207,10 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int 
         }
         double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
         double SINR = std::pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
-        return SINR;
+        /*  change to logarithmic SINR
+            !*-*-QUESTION*-*-! 2023/02/07 : is because A^2 need to convert to dBm ?
+        */
+        return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
     }
     else{
         std::cout<<"**global configuration about method is WRONG!**\n";
@@ -217,7 +219,7 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, int 
 }
 double estimateOneVlcFrontEnd(int subchannel_index) {
     // H_F(k) = exp( -(k * modulation_bandwidth) / (subcarrier_num * fitting_coefficient * 3dB_cutoff)) based on liu's ref's ref (4)
-    return exp((-1) * subchannel_index * VLC_AP_bandwidth / (VLC_AP_subchannel * fitting_coefficient * three_dB_cutoff));
+    return exp((-1) * subchannel_index * (double)VLC_AP_bandwidth / (VLC_AP_subchannel * fitting_coefficient * three_dB_cutoff));
 }
 
 /*
@@ -288,35 +290,36 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         std::normal_distribution<double> Gaussian_before(0.0,3);  // Xσ (before)
         std::normal_distribution<double> Gaussian_after(0.0,5); // Xσ (after)
         std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
-        boost::math::rayleigh_distribution<double> rayleigh(0.8);
+        /*
+            !*-*-NOTICE*-*-! 2023/02/07 : rayleigh(σ) ,
+            σ will affect RF SINR
+        */
+        boost::math::rayleigh_distribution<double> rayleigh(0.2);
         std::uniform_real_distribution<double> random_p(0.0, 1.0);
-        if(first_time){
-            if(distance <= breakpoint_distance){
-                for(int i = 0; i<100000 ; i++){
-                    X += Gaussian_before(gen);
-                    p = random_p(gen);
-                    H += quantile(rayleigh,p);
-                }
+        if(distance <= breakpoint_distance){
+            for(int i = 0; i<100000 ; i++){
+                X += Gaussian_before(gen);
+                p = random_p(gen);
+                H += quantile(rayleigh,p);
             }
-            if(distance > breakpoint_distance){
-                for(int i = 0; i<100000 ; i++){
-                    X += Gaussian_after(gen);
-                    p = random_p(gen);
-                    H += quantile(rayleigh,p);
-                }
-            }
-            X /= 100000;
-            H /= 100000;
-            first_time = false;
         }
+        if(distance > breakpoint_distance){
+            for(int i = 0; i<100000 ; i++){
+                X += Gaussian_after(gen);
+                p = random_p(gen);
+                H += quantile(rayleigh,p);
+            }
+        }
+        X /= 100000.0;
+        H /= 100000.0;
 
         double L_d;
 
         if(distance <= breakpoint_distance){
-            L_d = 20 * log10(distance) + 20 * log10(RF_carrier_frequency) - 147.5 + X;
+            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + X;
         }
         else{
-            L_d = 20 * log10(distance) + 20 * log10(RF_carrier_frequency) - 147.5 + 35 * log10(distance / breakpoint_distance) + X;
+            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10((double)distance / breakpoint_distance) + X;
         }
         double rf_los_channel_gain = std::pow(H,2) * std::pow(10,((-1)*L_d)/10.0);
         return rf_los_channel_gain;

@@ -40,6 +40,7 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
             std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
+            std::cout << std::endl;
         }
         std::cout << std::endl;
     }
@@ -72,6 +73,7 @@ void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matr
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
             std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j]<< " ";
+            std::cout << std::endl;
         }
         std::cout << std::endl;
     }
@@ -98,7 +100,7 @@ void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector){
     std::cout << "RF Channel Gain vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
         std::cout<<"for UE "<<i<<" : \n";
-        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_channel_gain_vector[i]<<std::endl;
+        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<RF_channel_gain_vector[i]<<std::endl;
     }
     std::cout << std::endl;
 }
@@ -107,7 +109,7 @@ void printRFSINRVector(std::vector<double> &RF_SINR_vector){
     std::cout << "RF SINR vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
         std::cout<<"for UE "<<i<<" : \n";
-        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_SINR_vector[i]<<std::endl;
+        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<RF_SINR_vector[i]<<std::endl;
     }
     std::cout << std::endl;
 }

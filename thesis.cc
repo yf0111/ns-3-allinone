@@ -158,34 +158,6 @@ static void initialize() {
 
     recorded_average_outage_probability = std::vector<double>(state_num,0.0);
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
-
-/*#if DEBUG_MODE
-    bool VLC_init = true,RF_init = true;
-    for(int i=0;i<VLC_AP_num;i++){
-        for(int j=0;j<UE_num;j++){
-            if(VLC_LOS_matrix[i][j] == 0 && VLC_SINR_matrix[i][j] == 0 && VLC_data_rate_matrix[i][j] == 0){
-            }
-            else{
-                VLC_init = false;
-            }
-        }
-    }
-    if(VLC_init){
-        std::cout<<" VLC initialize success ! "<<std::endl;
-    }
-
-    for(int i=0;i<UE_num;i++){
-        if(RF_channel_gain_vector[i] == 0 && RF_SINR_vector[i] == 0 && RF_data_rate_vector[i] == 0){
-        }
-        else{
-            RF_init = false;
-        }
-    }
-    if(RF_init){
-        std::cout<<" RF initialize success ! "<<std::endl;
-    }
-#endif // DEBUG_MODE*/
-
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -247,12 +219,15 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     }
     recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
 
+    std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
+    std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
 
-#if DEBUG_MODE
+/*#if DEBUG_MODE
     std::cout << "state " << state << std::endl;
     std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
     std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
 #endif // DEBUG_MODE
+*/
 
 
     // use another storage to keep UE's information
