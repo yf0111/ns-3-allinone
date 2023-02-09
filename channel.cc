@@ -293,8 +293,10 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         /*
             !*-*-NOTICE*-*-! 2023/02/07 : rayleigh(σ) ,
             σ will affect RF SINR
+            https://www.boost.org/doc/libs/1_37_0/libs/math/doc/sf_and_dist/html/math_toolkit/dist/dist_ref/dists/rayleigh.html
+                             2023/02/09 : 0.29
         */
-        boost::math::rayleigh_distribution<double> rayleigh(0.2);
+        boost::math::rayleigh_distribution<double> rayleigh(0.29);
         std::uniform_real_distribution<double> random_p(0.0, 1.0);
         if(distance <= breakpoint_distance){
             for(int i = 0; i<100000 ; i++){

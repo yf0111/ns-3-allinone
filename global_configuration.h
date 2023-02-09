@@ -141,7 +141,7 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
-const double require_data_rate_threshold = 20; //Mbps
+const double require_data_rate_threshold = 40; //Mbps
 
 /*
     ref'1 system parameter

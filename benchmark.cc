@@ -71,6 +71,59 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 {
 
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+/*  Standalone LiFi */
+/*
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        local_AP_association_matrix[0][UE_index] = 0;
+        int max_AP_index = 0;
+        double max_AP_value = -DBL_MAX;
+        for(int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+            if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_value){
+                max_AP_index = VLC_AP_index + 1;
+                max_AP_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+            }
+        }
+        if(max_AP_index != 0){
+            local_AP_association_matrix[max_AP_index][UE_index] = 1;
+        }
+    }
+    std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
+
+    for(int i = 0 ; i < RF_AP_num+VLC_AP_num ; i++){
+        int served_UE_number = 0;
+        for(int j = 0 ; j < UE_num ; j++){
+            if(local_AP_association_matrix[i][j] == 1){
+                served_UE_number += 1;
+            }
+        }
+        AP_serve_UE_numbers[i] = served_UE_number;
+    }
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        //data rate : g * ρ * η * bandwidth
+        double data_rate = 0.0;
+        for(int AP_index = 0 ;AP_index < RF_AP_num+VLC_AP_num ;AP_index ++){
+            if(local_AP_association_matrix[AP_index][UE_index] == 1){ // UE is RF
+                if(AP_index != 0){
+                    int nums = AP_serve_UE_numbers[AP_index];
+                    data_rate = (1.0/nums) * getSpectralEfficiency(VLC_SINR_matrix[AP_index - 1][UE_index]) * VLC_AP_bandwidth;
+                }
+            }
+        }
+        UE_final_data_rate_vector[UE_index] = data_rate;
+    }
+*/
+
+/*  Standalone WiFi */
+/*
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        //data rate : g * ρ * η * bandwidth
+        local_AP_association_matrix[0][UE_index] = 1;
+        double data_rate = (1.0 / UE_num ) * getSpectralEfficiency(RF_SINR_vector[UE_index]) * RF_AP_bandwidth;
+        UE_final_data_rate_vector[UE_index] = data_rate;
+    }
+*/
+
+
 /*   Hybrid   */
 /*
     for(int UE_index = 0; UE_index < UE_num ; UE_index ++){
@@ -88,7 +141,6 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
         }
         local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
-
     std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
 
     for(int i = 0 ; i < RF_AP_num+VLC_AP_num ; i++){
@@ -105,16 +157,14 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
         //data rate : g * ρ * η * bandwidth
         double data_rate = 0.0;
         for(int AP_index = 0 ;AP_index < RF_AP_num+VLC_AP_num ;AP_index ++){
-            if(AP_index == 0){ // RF
-                if(local_AP_association_matrix[AP_index][UE_index] == 1){
+            if(local_AP_association_matrix[AP_index][UE_index] == 1){ // UE is RF
+                if(AP_index == 0){
                     int nums = AP_serve_UE_numbers[AP_index];
                     data_rate = (1.0/nums) * getSpectralEfficiency(RF_SINR_vector[UE_index]) * RF_AP_bandwidth;
                 }
-            }
-            else{ // VLC
-                if(local_AP_association_matrix[AP_index][UE_index] == 1){
+                else{ // UE is VLC
                     int nums = AP_serve_UE_numbers[AP_index];
-                    data_rate = (1.0/nums) * getSpectralEfficiency(VLC_SINR_matrix[AP_index-1][UE_index]) * VLC_AP_bandwidth;
+                    data_rate = (1.0/nums) * getSpectralEfficiency(VLC_SINR_matrix[AP_index - 1 ][UE_index]) * VLC_AP_bandwidth;
                 }
             }
         }
@@ -124,7 +174,6 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 
 
 /*  LASINR  */
-
 
     // step 1 : AP association using stand alone WiFi formula (9) and stand alone LiFi formula (11)
     for(int i = 0 ; i < UE_num ; i++){
@@ -143,13 +192,6 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
         local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
 
-#if DEBUG_MODE
-
-    printApAssociationMatrix(local_AP_association_matrix);
-
-#endif // DEBUG_MODE
-
-
     // step 1.5 : calculate the numbers of users served by the AP
     std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
 
@@ -163,38 +205,29 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
         AP_serve_UE_numbers[i] = served_UE_number;
     }
 
-#if DEBUG_MODE
-
-    printAPServeUENum(AP_serve_UE_numbers);
-
-#endif // DEBUG_MODE
-
     // step 2 : calculate UE can get data rate using (13)
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        //data rate : g * ρ * η * bandwidth
-        double vlc_data_rate = 0;
-        int nums = AP_serve_UE_numbers[0];
-        double rf_data_rate = (1.0/nums) * getSpectralEfficiency(RF_SINR_vector[UE_index])* RF_AP_bandwidth; // RF
-        for(int VLC_AP_index = 1 ; VLC_AP_index < RF_AP_num + VLC_AP_num ; VLC_AP_index++){
-            if(local_AP_association_matrix[VLC_AP_index][UE_index] == 1){
-                int nums = AP_serve_UE_numbers[VLC_AP_index];
-                vlc_data_rate = (1.0/nums) * getSpectralEfficiency(VLC_SINR_matrix[VLC_AP_index-1][UE_index]) * VLC_AP_bandwidth; // VLC
+        double RF_data_rate = 0.0;
+        double VLC_data_rate = 0.0;
+        for(int AP_index = 0; AP_index < RF_AP_num+VLC_AP_num; AP_index++){
+            //data rate : g * ρ * η * bandwidth
+            if(local_AP_association_matrix[AP_index][UE_index] == 1){
+                if(AP_index == 0){ // RF
+                    double nums = 1.0 / UE_num ;
+                    RF_data_rate = nums * getSpectralEfficiency(RF_SINR_vector[UE_index]) * RF_AP_bandwidth;
+                }
+                else{ // VLC
+                    double nums = 1.0 / AP_serve_UE_numbers[AP_index];
+                    VLC_data_rate = nums * getSpectralEfficiency(VLC_SINR_matrix[AP_index-1][UE_index]) * VLC_AP_bandwidth;
+                }
             }
         }
-        double final_data_rate = (rf_data_rate + vlc_data_rate)* la_overhead;
-        UE_final_data_rate_vector[UE_index] = final_data_rate;
+        double total = (RF_data_rate + VLC_data_rate) * la_overhead;
+        UE_final_data_rate_vector[UE_index] = (RF_data_rate + VLC_data_rate) * la_overhead;
     }
 
-#if DEBUG_MODE
-
-    printUEFinalDataRate(UE_final_data_rate_vector);
-
-#endif // DEBUG_MODE
 
     updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
-
-
-
 }
 
 
@@ -233,7 +266,6 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         AP_serve_UE_numbers[i] = served_UE_number;
     }
 
-
     // step 2 : calculate data rate using stand LiFi formula (12)
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         //data rate : g * ρ * η * bandwidth
@@ -268,7 +300,6 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         AP_serve_UE_numbers[i] = served_UE_number;
     }
 
-
     // step 4 : calculate LA user's data rate using (14)
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         //data rate : g * ρ * η * bandwidth
@@ -280,7 +311,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
                     int nums = AP_serve_UE_numbers[AP_index];
                     rf_data_rate = (1.0/nums) * getSpectralEfficiency(RF_SINR_vector[UE_index]) * RF_AP_bandwidth; //RF
                 }
-                if(AP_index > 0 ){
+                else{
                     int nums = AP_serve_UE_numbers[AP_index];
                     vlc_data_rate = (1.0/nums) * getSpectralEfficiency(VLC_SINR_matrix[AP_index-1][UE_index]) * VLC_AP_bandwidth; //VLC
                 }
@@ -290,11 +321,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         UE_final_data_rate_vector[UE_index] = final_data_rate;
     }
 
-#if DEBUG_MODE
 
-    printUEFinalDataRate(UE_final_data_rate_vector);
-
-#endif // DEBUG_MODE
 
     updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
 
