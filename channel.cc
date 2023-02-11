@@ -139,7 +139,6 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::
         VLC_SINR_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (VLC_AP_subchannel, 0.0)));
         for (int i = 1; i < effective_VLC_subchannel + 1; i++){
             front_end_vector[i] = estimateOneVlcFrontEnd(i);
-            std::cout<<front_end_vector[i]<<"\n";
         }
 
         for (int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num; VLC_AP_index++) {
@@ -160,7 +159,6 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix, std::
                     double inner_denominator = std::pow(conversion_efficiency * 2, 2) * (std::pow(VLC_LOS_matrix[VLC_AP_index][UE_index], 2) - interference);
                     double second_term = log(inner_numerator / inner_denominator);
                     lower_than_one_sinr_start_idx = ceil(-1 * first_term * second_term);
-                    std::cout<<lower_than_one_sinr_start_idx<<"\n";
                 }
                 /*
                     !*-*-NOTICE*-*-! 2023/02/06 : now lower_than_one_sinr_start_idx value is about 10~15
@@ -274,8 +272,9 @@ void calculateRFChannelGain(NodeContainer &RF_AP_node,NodeContainer &UE_nodes,st
 double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
     if(PDSERT && !LASINR && !LAEQOS){
         double distance = getDistance(RF_AP, UE_node);
-        double path_loss = (18.7*log10(distance)) + 46.8 + (20*log10(RF_carrier_frequency/5)) + (5 * (wall_num -1));
-        double path_loss_power = -(path_loss)/10;
+        double los = (18.7*log10(distance)) + 46.8 + (20*log10(RF_carrier_frequency/5.0));
+        double nlos = (36.8*log10(distance)) + 43.8 + (20*log10(RF_carrier_frequency/5.0)) + (5 * (wall_num -1));
+        double path_loss_power = -(los + nlos)/10.0;
         double rf_los_channel_gain = pow(10,path_loss_power);
         return rf_los_channel_gain;
     }
@@ -334,7 +333,6 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
 
 /*
     RF SINR
-    !*-*-TODO*-*-! 2023/02/06 : start with this funciotn
 */
 void calculateAllRFSINR(std::vector<double> &RF_SINR_vector, std::vector<double> &RF_channel_gain_vector) {
     RF_SINR_vector = std::vector<double> (UE_num,0.0);
@@ -349,7 +347,7 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector, int UE_ind
 
     if(PDSERT && !LASINR && !LAEQOS){
         double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
-        double denominator = RF_noise_power_spectral_density*(RF_AP_bandwidth / RF_AP_subchannel);
+        double denominator = RF_noise_power_spectral_density*((double)RF_AP_bandwidth / RF_AP_subchannel);
         double SINR = numerator / denominator;
         return SINR;
     }
@@ -407,27 +405,13 @@ void precalculation(NodeContainer  &RF_AP_node,
                       std::vector<double> &RF_channel_gain_vector,
                       std::vector<double> &RF_SINR_vector,
                       std::vector<double> &RF_data_rate_vector,
-                      std::vector<MyUeNode> &my_UE_list){
+                      std::vector<MyUeNode> &my_UE_list)
+{
     calculateAllVlcLightOfSight(VLC_AP_nodes, UE_nodes, my_UE_list, VLC_LOS_matrix);
     calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix, VLC_SINR_matrix_3d);
 
-#if DEBUG_MODE
-    printVlcLosMatrix(VLC_LOS_matrix);
-    if(PDSERT && !LASINR && !LAEQOS){
-        printVlcSinrMatrix3d(VLC_SINR_matrix_3d);
-        printVlcDataRateMatrix3d(VLC_data_rate_matrix_3d);
-    }
-    else if((LAEQOS || LASINR) && !PDSERT){
-        printVlcSinrMatrix(VLC_SINR_matrix);
-        printVlcDataRateMatrix(VLC_data_rate_matrix);
-    }
-#endif
 
     calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector);
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);
 
-#if DEBUG_MODE
-    printRFChannelGainVector(RF_channel_gain_vector);
-    printRFSINRVector(RF_SINR_vector);
-#endif
 }

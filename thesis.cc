@@ -222,13 +222,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
     std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
 
-/*#if DEBUG_MODE
-    std::cout << "state " << state << std::endl;
-    std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
-    std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
-#endif // DEBUG_MODE
-*/
-
 
     // use another storage to keep UE's information
     // since somehow get nothing when accessing these information through my_UE_list after Simulator::Run()
@@ -280,7 +273,6 @@ int main(int argc, char *argv[])
 #if DEBUG_MODE
     printUePosition(UE_nodes);
 #endif
-
     std::vector<MyUeNode> my_UE_list = initializeMyUeNodeList(UE_nodes);
 
     // start time
@@ -327,13 +319,15 @@ int main(int argc, char *argv[])
     }
     else{
         if(LASINR){
-            method = "benchmark-ref2-LASINR";
+            method = "benchmark-LASINR";
+        }
+        else if(PDSERT){
+            method = "benchmark-PDSERT";
         }
         else{
-            method = "benchmark-ref2-LAEQOS";
+            method = "benchmark-LAEQOS";
         }
     }
-
 
     std::cout << "In this simulation :(" << method << "), UE=" << std::to_string(UE_num) << ", execution time: " << exec_time << std::endl << std::endl;
 
@@ -342,7 +336,13 @@ int main(int argc, char *argv[])
      */
 
     std::fstream output;
-    output.open(path + method + ",UE=" + std::to_string(UE_num) + ",LA=" + std::to_string(LA_UE_num) + ".csv", std::ios::out | std::ios::app);
+    if(LASINR || LAEQOS){
+        output.open(path + method + ",UE=" + std::to_string(UE_num) + ",LA=" + std::to_string(LA_UE_num) + ".csv", std::ios::out | std::ios::app);
+    }
+    else{
+        output.open(path + method + ",UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    }
+
     if (!output.is_open()) {
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);

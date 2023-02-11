@@ -10,8 +10,6 @@
 using namespace ns3;
 
 
-//*extern int counter;
-
 
 /*
  * a high-level function for calculating all channel-related information for VLC and RF,

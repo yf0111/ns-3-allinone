@@ -60,8 +60,24 @@ void benchmarkMethod(int &state,
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
 #endif // LAEQOS
 
+#if PDSERT
+    /*
+        ref'1 , PDSERT
+    */
+    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+#endif // PDSERT
 
 }
+
+void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
+             std::vector<double> &RF_SINR_vector,
+             std::vector<std::vector<double>> &VLC_SINR_matrix,
+             std::vector<double> &UE_final_data_rate_vector,
+             std::vector<MyUeNode> &my_UE_list)
+{
+    std::cout<<"in benchmark.cc PDS_ERT !\n";
+}
+
 
 void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,

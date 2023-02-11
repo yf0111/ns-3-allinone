@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <time.h>
+#include <random>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -101,18 +102,40 @@ void installUeMobility(NodeContainer &UE_nodes) {
     std::stringstream ssPos;
     ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
 
+    /* ref'1 :
+        choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
+    */
+
+    std::stringstream ssPosZ;
+    ssPosZ << "ns3::UniformRandomVariable[Min=0.5|Max=2.0]";
+
+
+    /*double min_ = 0.5;
+    double max_ = 2.0;
+    Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable> ();
+    x->SetAttribute ("Min", DoubleValue (min_));
+    x->SetAttribute ("Max", DoubleValue (max_));
+    // The values returned by a uniformly distributed random
+    // variable should always be within the range
     //
-    /* //1// : choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
-    srand (time(NULL));
-    std::string arr[4] = {"0.5","1","1.5","1"};
-    int random_index = rand()%4;
-    std::string z = arr[random_index];*/
+    //     [min, max)  .
+    //
+    double value = x->GetValue ();
+    std::cout<<"value:\t"<<value<<"\n";*/
+
+
 
     // set an attribute to be set during construction
     pos.Set("X", StringValue(ssPos.str()));
     pos.Set("Y", StringValue(ssPos.str()));
     pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    //1// pos.Set("Z",StringValue(z));
+
+    /*if(PDSERT){
+        pos.Set("Z", StringValue(ssPosZ.str()));
+    }else{
+        pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    }*/
+
 
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
     UE_mobility.SetPositionAllocator(position_allocator);

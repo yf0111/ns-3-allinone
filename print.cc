@@ -87,9 +87,10 @@ void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
-            for (int k = 0; k <= effective_VLC_subchannel; k++) {
+            for (int k = 0; k <= VLC_AP_subchannel; k++) {
                 std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix_3d[i][j][k] << " ";
             }
+            std::cout<<std::endl;
         }
         std::cout << std::endl;
     }
@@ -175,7 +176,6 @@ void printVlcApPosition(ns3::NodeContainer &VLC_AP_nodes) {
 
 void printUePosition(ns3::NodeContainer &UE_nodes) {
     int UE_index = 0;
-
     std::fstream output;
     output.open("/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/UE_position.csv", std::ios::out | std::ios::trunc);
     if (!output.is_open()) {
@@ -200,7 +200,6 @@ void printUePosition(ns3::NodeContainer &UE_nodes) {
 }
 
 void printUePosition(std::vector<MyUeNode> &my_UE_list) {
-
     std::fstream output;
     output.open("/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/UE_position.csv", std::ios::out | std::ios::trunc);
     if (!output.is_open()) {
