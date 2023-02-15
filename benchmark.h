@@ -6,7 +6,7 @@
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
 #include "my_UE_node.h"
-
+#include "action_type.h"
 
 void benchmarkMethod(int &state,
                      NodeContainer &RF_AP_node,
@@ -28,7 +28,8 @@ void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
              std::vector<std::vector<double>> &VLC_SINR_matrix,
              std::vector<double> &UE_final_data_rate_vector,
-             std::vector<MyUeNode> &my_UE_list);
+             std::vector<MyUeNode> &my_UE_list,
+             std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d);
 
 void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
@@ -45,11 +46,10 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
 
 double getSpectralEfficiency(double SINR);
 
-/*std::vector<int> initializedStep(std::vector<double> &RF_data_rate_vector,
-                                std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix,
-                                std::vector<std::vector<int>> &local_AP_association_matrix,
-                                std::vector<std::vector<double>> &throughtput_per_iteration);
-*/
+std::vector<int> initializedStep(std::vector<std::vector<int>> &AP_association_matrix,
+                                struct env_state_type &env_state
+                                );
+
 
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,

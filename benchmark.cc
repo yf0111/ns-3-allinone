@@ -6,6 +6,7 @@
 #include <chrono>
 #include <algorithm>
 #include <float.h>
+#include <map>
 
 #include "print.h"
 #include "channel.h"
@@ -15,6 +16,22 @@
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
 #include "global_configuration.h"
+#include "action_type.h"
+
+
+struct env_state_type{
+    /*
+        State :
+            subchannel occupy status(idle or busy),
+            the channel quality (SINR value),
+            the service application types (normal services (low priority) and URLLC services (high priority),
+            service satisfaction (reliability, latency, and minimum data rate)
+    */
+    std::vector<std::vector<int>> env_state_subchannel;
+    std::vector<std::vector<std::vector<double>>> env_state_SINR;
+    std::vector<int> env_state_UEtype;
+    std::vector<std::vector<double>> env_state_rlm;
+};
 
 /*
     table of conversion from SINR to spectral efficiency
@@ -24,7 +41,6 @@
 static const std::map<double, double, std::greater<double>> SINR_to_spectral_efficiency = { {0.0, 0}, {2.0, 0.5}, {4.0, 0.75}, {5.0, 1.0},
                                                                                              {9.0, 1.5}, {11.0, 2.0}, {15.0, 3.0}, {18.0, 4.0},
                                                                                              {20.0,5.0}};
-
 void benchmarkMethod(int &state,
                      NodeContainer &RF_AP_node,
                      NodeContainer &VLC_AP_nodes,
@@ -64,20 +80,10 @@ void benchmarkMethod(int &state,
     /*
         ref'1 , PDSERT
     */
-    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d);
 #endif // PDSERT
 
 }
-
-void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
-             std::vector<double> &RF_SINR_vector,
-             std::vector<std::vector<double>> &VLC_SINR_matrix,
-             std::vector<double> &UE_final_data_rate_vector,
-             std::vector<MyUeNode> &my_UE_list)
-{
-    std::cout<<"in benchmark.cc PDS_ERT !\n";
-}
-
 
 void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
@@ -87,6 +93,8 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 {
 
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+
+
 /*  Standalone LiFi */
 /*
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
@@ -343,16 +351,60 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
 
 }
 
-
 double getSpectralEfficiency(double SINR){
     auto it = SINR_to_spectral_efficiency.lower_bound(SINR);
     return it->second;
 }
 
-/*std::vector<int> initializedStep(std::vector<std::vector<double>> VLC_SINR_matrix,
-                                 std::vector<std::vector<double>> RF_SINR_vector){
+void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
+             std::vector<double> &RF_SINR_vector,
+             std::vector<std::vector<double>> &VLC_SINR_matrix,
+             std::vector<double> &UE_final_data_rate_vector,
+             std::vector<MyUeNode> &my_UE_list,
+             std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d)
+{
 
-}*/
+/*,
+             std::vector<env_state_type> &env_state_vec,
+             std::vector<double> &value_func_vec,
+             std::map<env_state_type,action_type> &policy_map,
+             std::vector<double> &dqn_vec*/
+
+    /*
+        URLLC requirement + Minimum data rate Requirements
+    */
+
+    std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+    /*
+        State :
+            subchannel occupy status(idle or busy),
+            the channel quality (SINR value),
+            the service application types (normal services (low priority) and URLLC services (high priority),
+            service satisfaction (reliability, latency, and minimum data rate)
+    */
+
+    /*
+        initialize Step
+            1. network state s0
+            2. value function V(s0)
+            3. Policy strategy π(s0)
+            4. DQN , parameter θ0
+    */
+
+
+}
+
+std::vector<int> initializedStep()
+{
+    /*
+       initialize Step
+            1. network state s0
+            2. value function V(s0)
+            3. Policy strategy π(s0)
+            4. DQN , parameter θ0
+    */
+
+}
 
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,

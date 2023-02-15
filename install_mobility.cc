@@ -6,6 +6,14 @@
 #include <cstdlib>
 #include <time.h>
 #include <random>
+#include <float.h>
+#include <stdio.h>
+#include <iomanip>
+#include <math.h>
+#include <chrono>
+#include <complex>
+#include <boost/math/distributions/rayleigh.hpp>
+
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -16,6 +24,10 @@
 
 
 using namespace ns3;
+
+std::random_device rd;  // Will be used to obtain a seed for the random number engine
+std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+std::uniform_int_distribution<> distrib(0, 3);
 
 /*
     install the mobility of RF AP
@@ -78,6 +90,7 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     }
 
 
+
     VLC_AP_mobility.SetPositionAllocator(VLC_AP_pos_list);
 
     VLC_AP_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
@@ -95,6 +108,12 @@ void installUeMobility(NodeContainer &UE_nodes) {
 
     MobilityHelper UE_mobility;
 
+    /* ref'1 :
+        choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
+
+        !*-*-NOTICE*-*-! 2023/02/11 : UE's Z can't be different ? , if different will wrong
+    */
+
     // set 3D position allocator for random waypoints
     ObjectFactory pos;
     pos.SetTypeId("ns3::RandomBoxPositionAllocator");
@@ -102,43 +121,14 @@ void installUeMobility(NodeContainer &UE_nodes) {
     std::stringstream ssPos;
     ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
 
-    /* ref'1 :
-        choose different heights for UE (0.5,1,1.5,2); A number of devices are randomly distributed at four different heights (0.5, 1, 1.5,and 2 m).
-    */
-
-    std::stringstream ssPosZ;
-    ssPosZ << "ns3::UniformRandomVariable[Min=0.5|Max=2.0]";
-
-
-    /*double min_ = 0.5;
-    double max_ = 2.0;
-    Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable> ();
-    x->SetAttribute ("Min", DoubleValue (min_));
-    x->SetAttribute ("Max", DoubleValue (max_));
-    // The values returned by a uniformly distributed random
-    // variable should always be within the range
-    //
-    //     [min, max)  .
-    //
-    double value = x->GetValue ();
-    std::cout<<"value:\t"<<value<<"\n";*/
-
-
-
     // set an attribute to be set during construction
     pos.Set("X", StringValue(ssPos.str()));
     pos.Set("Y", StringValue(ssPos.str()));
     pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-
-    /*if(PDSERT){
-        pos.Set("Z", StringValue(ssPosZ.str()));
-    }else{
-        pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    }*/
-
-
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
     UE_mobility.SetPositionAllocator(position_allocator);
+
+
 
 /* //*
     2023/01/09 : RWP
@@ -161,7 +151,82 @@ void installUeMobility(NodeContainer &UE_nodes) {
     UE_mobility.Install(UE_nodes);
 }
 
+/*
 
+void installUeMobility(NodeContainer &UE_nodes) {
+    MobilityHelper UE_mobility;
+    if(PDSERT){
+        Ptr<ListPositionAllocator> UE_Pos_list = CreateObject<ListPositionAllocator>();
+
+        std::vector<double> UE_heights;
+        UE_heights.push_back(0.5);
+        UE_heights.push_back(1.0);
+        UE_heights.push_back(1.5);
+        UE_heights.push_back(2.0);
+
+        srand(time(NULL));
+        for(int i=0;i<UE_num;i++){
+            double x = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / room_size)); // 0 ~ room_size
+            double y = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX / room_size)); // 0 ~ 5
+            x -= room_size / 2;
+            y -= room_size / 2;
+
+            /*  Ptr<UniformRandomVariable> v = CreateObject<UniformRandomVariable>();
+                v -> SetAttribute ("Min",DoubleValue(0.5));
+                v -> SetAttribute ("Max",DoubleValue(2.0));
+                double value = v->GetValue();
+
+                double min_ = DBL_MAX;
+                std::vector<double> vec_value ;
+                vec_value.push_back(value - 0.5);
+                vec_value.push_back(value - 1.0);
+                vec_value.push_back(value - 1.5);
+                vec_value.push_back(value - 2.0);
+
+
+                for(int i = 0 ; i < vec_value.size() ; i++){
+                    if(fabs(vec_value[i]) < min_){
+                        min_ = fabs(vec_value[i]);
+                        z = UE_heights[i];
+                    }
+                }
+
+
+            /*  std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
+                std::uniform_int_distribution<int> random_value(0,3);
+                double z = UE_heights[random_value(gen)];
+
+            /*  std::random_device rd;  // Will be used to obtain a seed for the random number engine
+                std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+                std::uniform_int_distribution<> distrib(0, 3);
+                double z =  UE_heights[distrib(gen)];
+
+            UE_Pos_list -> Add(Vector(x,y,0));
+        }
+        UE_mobility.SetPositionAllocator(UE_Pos_list);
+
+    }
+    else{
+        ObjectFactory pos;
+        pos.SetTypeId("ns3::RandomBoxPositionAllocator");
+
+        std::stringstream ssPos;
+        ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
+
+        // set an attribute to be set during construction
+        pos.Set("X", StringValue(ssPos.str()));
+        pos.Set("Y", StringValue(ssPos.str()));
+        pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+
+        Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
+        UE_mobility.SetPositionAllocator(position_allocator);
+    }
+    UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    UE_mobility.Install(UE_nodes);
+}
+
+
+*/
 
 
 

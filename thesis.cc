@@ -53,6 +53,8 @@
 #include "print.h"
 #include "benchmark.h"
 #include "proposed_method.h"
+#include "action_type.h"
+
 
 using namespace ns3;
 
@@ -93,9 +95,14 @@ std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average dat
 
 /*
     !*-*-NEW*-*-!
-    //2// : for reference 2
+    ref'2 : for reference 2
 */
 std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
+
+/*
+    !*-*-NEW*-*-!
+    ref'1 : for reference 1
+*/
 
 
 static const uint32_t totalTxBytes = 10000000;
@@ -353,7 +360,6 @@ int main(int argc, char *argv[])
     }
 
     output.close();
-
     Simulator::Destroy();
 }
 

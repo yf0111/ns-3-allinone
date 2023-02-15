@@ -2,9 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
-#include <cmath>
 #include <chrono>
-#include <cmath>
 #include <fstream>
 #include <complex>
 #include <boost/math/distributions/rayleigh.hpp>
@@ -46,11 +44,10 @@ double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_n
     const double distance = getDistance(VLC_AP, UE_node);
 
     double line_of_sight = (lambertian_coefficient+1) * receiver_area / (2 * PI * pow(distance, 2));
+    line_of_sight = line_of_sight * pow(cos(irradiance_angle), lambertian_coefficient); // cos^θ(φ)
     line_of_sight = line_of_sight * concentrator_gain; // g(ψ)
     line_of_sight = line_of_sight * filter_gain; // T_s(ψ)
-    line_of_sight = line_of_sight * pow(cos(irradiance_angle), lambertian_coefficient); // cos^θ(φ)
     line_of_sight = line_of_sight * cosine_incidence_angle; // cos(ψ)
-
     return line_of_sight;
 }
 // cosψ = 1/d((x_a-x_u)sinθcosω+(y_a-y_u)sinθsinω+(z_a-z_u)cosθ) based on (3)
@@ -73,7 +70,6 @@ double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_no
     double first_term = dx * sin(polar_angle) * cos(azimuth_angle);
     double second_term = dy * sin(polar_angle) * sin(azimuth_angle);
     double last_term = dz * cos(polar_angle);
-
     return (first_term + second_term + last_term) / dist;
 }
 /*
@@ -409,7 +405,6 @@ void precalculation(NodeContainer  &RF_AP_node,
 {
     calculateAllVlcLightOfSight(VLC_AP_nodes, UE_nodes, my_UE_list, VLC_LOS_matrix);
     calculateAllVlcSINR(VLC_LOS_matrix, VLC_SINR_matrix, VLC_SINR_matrix_3d);
-
 
     calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector);
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);

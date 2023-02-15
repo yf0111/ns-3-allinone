@@ -56,7 +56,12 @@ void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SIN
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
             for (int k = 0; k <= effective_VLC_subchannel; k++) {
-                std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_SINR_matrix_3d[i][j][k] << " ";
+                if(VLC_SINR_matrix_3d[i][j][k] == 0){
+                    std::cout << "0\t" ;
+                }
+                else{
+                    std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(15) << VLC_SINR_matrix_3d[i][j][k] << "\t";
+                }
             }
             std::cout << std::endl;
         }
