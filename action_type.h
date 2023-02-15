@@ -1,13 +1,8 @@
 #ifndef ACTION_TYPE_H
 #define ACTION_TYPE_H
 
-
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/mobility-module.h"
 #include "global_configuration.h"
 
-using namespace ns3;
 /*
     Action :
         AP selection

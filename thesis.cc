@@ -54,7 +54,7 @@
 #include "benchmark.h"
 #include "proposed_method.h"
 #include "action_type.h"
-
+#include "env_state_type.h"
 
 using namespace ns3;
 
@@ -103,6 +103,12 @@ std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
     !*-*-NEW*-*-!
     ref'1 : for reference 1
 */
+std::vector<Action_type> action_vec(state_num);
+std::vector<Env_state_type> env_state_vec(state_num);
+std::vector<double> value_func_vec(state_num,0.0);
+std::map<Env_state_type,Action_type> policy_map;
+std::vector<double> dqn_vec(state_num,0.0);
+
 
 
 static const uint32_t totalTxBytes = 10000000;
@@ -204,7 +210,8 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_SINR_matrix_3d, VLC_data_rate_matrix, VLC_data_rate_matrix_3d,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
+                        env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
 #endif
 
 

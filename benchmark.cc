@@ -17,21 +17,7 @@
 #include "ns3/mobility-module.h"
 #include "global_configuration.h"
 #include "action_type.h"
-
-
-struct env_state_type{
-    /*
-        State :
-            subchannel occupy status(idle or busy),
-            the channel quality (SINR value),
-            the service application types (normal services (low priority) and URLLC services (high priority),
-            service satisfaction (reliability, latency, and minimum data rate)
-    */
-    std::vector<std::vector<int>> env_state_subchannel;
-    std::vector<std::vector<std::vector<double>>> env_state_SINR;
-    std::vector<int> env_state_UEtype;
-    std::vector<std::vector<double>> env_state_rlm;
-};
+#include "env_state_type.h"
 
 /*
     table of conversion from SINR to spectral efficiency
@@ -55,13 +41,17 @@ void benchmarkMethod(int &state,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
-                     std::vector<double> &UE_final_data_rate_vector)
+                     std::vector<double> &UE_final_data_rate_vector,
+                     std::vector<Env_state_type> &env_state_vec,
+                     std::vector<Action_type> &action_vec,
+                     std::vector<double> &value_func_vec,
+                     std::map<Env_state_type,Action_type> &policy_map,
+                     std::vector<double> &dqn_vec)
 {
     /*
         calculate VLC LOS and VLC SINR and RF LOS and RF SINR
     */
     precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix,VLC_SINR_matrix_3d, VLC_data_rate_matrix,VLC_data_rate_matrix_3d, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
-
 #if LASINR
     /*
         ref'2 , LA-SINR
@@ -80,7 +70,7 @@ void benchmarkMethod(int &state,
     /*
         ref'1 , PDSERT
     */
-    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d);
+    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d,env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
 #endif // PDSERT
 
 }
@@ -361,40 +351,32 @@ void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<std::vector<double>> &VLC_SINR_matrix,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
-             std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d)
-{
-
-/*,
-             std::vector<env_state_type> &env_state_vec,
+             std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
+             std::vector<Env_state_type> &env_state_vec,
+             std::vector<Action_type> &action_vec,
              std::vector<double> &value_func_vec,
-             std::map<env_state_type,action_type> &policy_map,
-             std::vector<double> &dqn_vec*/
+             std::map<Env_state_type,Action_type> &policy_map,
+             std::vector<double> &dqn_vec)
+{
 
     /*
         URLLC requirement + Minimum data rate Requirements
     */
 
-    std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
-    /*
-        State :
-            subchannel occupy status(idle or busy),
-            the channel quality (SINR value),
-            the service application types (normal services (low priority) and URLLC services (high priority),
-            service satisfaction (reliability, latency, and minimum data rate)
-    */
 
     /*
         initialize Step
-            1. network state s0
-            2. value function V(s0)
-            3. Policy strategy π(s0)
-            4. DQN , parameter θ0
     */
-
+    initializedStep(env_state_vec,value_func_vec,policy_map,dqn_vec,VLC_SINR_matrix_3d,RF_SINR_vector);
 
 }
 
-std::vector<int> initializedStep()
+void initializedStep(std::vector<Env_state_type> &env_state_vec,
+                     std::vector<double> &value_func_vec,
+                     std::map<Env_state_type,Action_type> &policy_map,
+                     std::vector<double> &dqn_vec,
+                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
+                     std::vector<double> &RF_SINR_vector)
 {
     /*
        initialize Step
@@ -403,6 +385,7 @@ std::vector<int> initializedStep()
             3. Policy strategy π(s0)
             4. DQN , parameter θ0
     */
+    Env_state_type new_env_state;
 
 }
 

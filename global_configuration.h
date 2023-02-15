@@ -23,7 +23,7 @@
 const double PI = boost::math::constants::pi<double>();
 const double room_size = 24; // m // @-ref'1- 24@ , @-ref'2- 5@
 const double time_period = 0.5; // sec //
-const int state_num = 10; // @-ref'1- @ , @-ref'2- 1@
+const int state_num = 1; // @-ref'1- @ , @-ref'2- 1@
 
 
 /*
@@ -34,7 +34,7 @@ const int RF_AP_height = 5; // m //  @-ref'1- 5@ , @-ref'2- 3@
 const int RF_AP_bandwidth = 10; // MHz // @-ref'1- 10@ , @-ref'2- 20@
 const int RF_AP_subchannel = 32; // number of sub channel // @-ref'1- 32@ , @-ref'2- none@
 const double RF_AP_power = 0.03; // W // @-ref'1- 0.03@ , @-ref'2- 0.1@
-const double RF_noise_power_spectral_density =  5.01e-27; // A^2/MHz // @-ref'1- ?@ , @-ref'2- 3.16e-11@
+const double RF_noise_power_spectral_density = 2.0e8 ; // A^2/MHz // @-ref'1- 2.0e8@ , @-ref'2- 3.16e-11@
 
 /*
 dBm -> A^2
@@ -107,7 +107,7 @@ const double three_dB_cutoff = 2; // MHz
 /*
     RF Channel
 */
-const double RF_carrier_frequency = 2.4e9; // Hz //
+const double RF_carrier_frequency = 2.4; // Hz // @-ref'1- 2.4@ , @-ref'2- 2.4e9@
 const int breakpoint_distance = 5; // m // @-ref'1- none@ , @-ref'2- 5@
 
 /*
@@ -149,7 +149,6 @@ const double require_data_rate_threshold = 40; //Mbps
 */
 const int effective_VLC_subchannel = VLC_AP_subchannel / 2 - 1; // The scaling factor 1/2 is due to the Hermitian symmetry
 const int effective_RF_subchannel = RF_AP_subchannel / 2 - 1;
-const int wall_num = 5;
-const double SINR_threshold = 150; // ???
+const int wall_num = 1;
 
 #endif // GLOBAL_CONFIGURATION_H

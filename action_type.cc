@@ -2,11 +2,6 @@
 
 #include "action_type.h"
 #include "global_configuration.h"
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/mobility-module.h"
-
-using namespace ns3;
 
 Action_type::Action_type(){
     action_ap = std::vector<std::vector<int>> (RF_AP_num+VLC_AP_num, std::vector<int> (UE_num,0));

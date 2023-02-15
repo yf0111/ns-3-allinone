@@ -269,8 +269,9 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
     if(PDSERT && !LASINR && !LAEQOS){
         double distance = getDistance(RF_AP, UE_node);
         double los = (18.7*log10(distance)) + 46.8 + (20*log10(RF_carrier_frequency/5.0));
-        double nlos = (36.8*log10(distance)) + 43.8 + (20*log10(RF_carrier_frequency/5.0)) + (5 * (wall_num -1));
-        double path_loss_power = -(los + nlos)/10.0;
+        //double nlos = (36.8*log10(distance)) + 43.8 + (20*log10(RF_carrier_frequency/5.0)) + (5 * (wall_num -1));
+        //double path_loss_power = -(los + nlos)/10.0;
+        double path_loss_power = (-los) / 10.0;
         double rf_los_channel_gain = pow(10,path_loss_power);
         return rf_los_channel_gain;
     }
