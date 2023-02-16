@@ -375,7 +375,7 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
                      std::vector<double> &value_func_vec,
                      std::map<Env_state_type,Action_type> &policy_map,
                      std::vector<double> &dqn_vec,
-                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
+                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d, // 36x10x16
                      std::vector<double> &RF_SINR_vector)
 {
     /*
@@ -386,14 +386,91 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
             4. DQN , parameter θ0
     */
     Env_state_type new_env_state;
+    std::vector<std::vector<double>> RF_SINR_vector_2d = extend_vector_1to2d(RF_SINR_vector,RF_AP_subchannel);
+    new_env_state.setEnvStateRFSINR(RF_SINR_vector_2d);
+    new_env_state.setEnvStateVLCSINR(VLC_SINR_matrix_3d);
 
+    /*   set UE tyepe   */
+    for(int i = 0 ; i < UE_num ; i++){
+        if(i < UE_num / 2){
+            new_env_state.setEnvStateUEtype(i,1);
+        }
+        else{
+            new_env_state.setEnvStateUEtype(i,2);
+        }
+    }
+
+    /*   set init sub channel association  */
+    for(int j = 0 ; j < UE_num ; j++){
+        new_env_state.setEnvStateRFSubChannel(0,j,1);
+    }
+    for(int i = 0 ; i < VLC_AP_num; i++){
+        for(int j = 0 ; j < VLC_AP_subchannel ; j++){
+            int max_UE_index = -1;
+            double max_value = -DBL_MAX;
+            for(int k = 0; k < UE_num ; k++){
+                if(new_env_state.getEnvStateVLCSINR(i,j,k) > max_value){
+                    max_UE_index = k;
+                    max_value = new_env_state.getEnvStateVLCSINR(i,j,k);
+                }
+            }
+            if(max_UE_index != -1){
+                new_env_state.setEnvStateVLCSubChannel(i,j,max_UE_index,1);
+            }
+            else{
+                std::cout<<"set init sub channel association error!\n";
+            }
+        }
+    }
+
+    /*
+        !*-*-TODO*-*-! 20230216 : check data rate !
+    */
+    std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
+    calculateDataRate(new_env_state , init_data_rate);
+    for(int i = 0 ; i < UE_num ; i++){
+        std::cout<<" UE : "<<i<< " data rate : "<<init_data_rate[i]<<"\n";
+    }
+
+
+
+}
+
+void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init_data_rate){
+    for(int ue_index = 0 ; ue_index < UE_num ; ue_index ++){
+        double UE_data_rate = 0.0;
+        /*   VLC   */
+        for(int i = 0 ; i < VLC_AP_num ; i++){
+            for(int j = 0; j < VLC_AP_subchannel ; j++){
+                if(now_env_state.getEnvStateVLCSubChannel(i,j,ue_index)){
+                    UE_data_rate += (((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 ) * log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index));
+                }
+            }
+        }
+        /*   RF   */
+        for(int j = 0 ; j < RF_AP_subchannel ; j++){
+            if(now_env_state.getEnvStateRFSubChannel(j,ue_index)){
+                UE_data_rate += ((double) RF_AP_bandwidth / RF_AP_subchannel) * log(1 + now_env_state.getEnvStateRFSINR(j,ue_index)); // downlink
+                UE_data_rate += ((double) RF_AP_bandwidth / RF_AP_subchannel) * log(1 + now_env_state.getEnvStateRFSINR(j,ue_index)); // uplink
+            }
+        }
+        init_data_rate[ue_index] = UE_data_rate;
+    }
+}
+
+
+std::vector<std::vector<double>> extend_vector_1to2d(std::vector<double> &extend_vector,int y_size){
+    std::vector<std::vector<double>> ans_vector = std::vector<std::vector<double>>(y_size,std::vector<double>(extend_vector.size(),0.0));
+    for(int j = 0 ; j < extend_vector.size() ; j++){
+        ans_vector[0][j] = extend_vector[j];
+    }
+    return ans_vector;
 }
 
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
                                std::vector<std::vector<int>> &AP_sssociation_matrix,
-                               std::vector<MyUeNode> &my_UE_list)
-{
+                               std::vector<MyUeNode> &my_UE_list){
     AP_sssociation_matrix = local_AP_sssociation_matrix;
 
     // update every myUeNode
@@ -406,8 +483,7 @@ void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociati
 }
 
 
-void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list)
-{
+void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list){
     for (int i = 0; i < my_UE_list.size(); i++) {
         double curr_throughput = throughtput_per_iteration[i].back();
         double curr_satisfaction = std::min(curr_throughput / my_UE_list[i].getRequiredDataRate(), 1.0);

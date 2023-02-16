@@ -64,7 +64,9 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
                      std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
                      std::vector<double> &RF_SINR_vector);
 
+void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init_data_rate);
 
+std::vector<std::vector<double>> extend_vector_1to2d(std::vector<double> &extend_vector,int y_size);
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
                                std::vector<std::vector<int>> &AP_sssociation_matrix,

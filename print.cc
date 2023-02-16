@@ -24,7 +24,8 @@ void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix){
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
-            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_LOS_matrix[i][j]<<" ";
+            std::cout << VLC_LOS_matrix[i][j]<<" ";
+            //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_LOS_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
         std::cout << std::endl;
@@ -39,7 +40,8 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  For UE " << j << ": \n";
             std::cout << "  ";
-            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
+            std::cout<<VLC_SINR_matrix[i][j]<<" ";
+            //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
         std::cout << std::endl;

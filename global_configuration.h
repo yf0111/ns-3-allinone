@@ -53,10 +53,10 @@ ref'2 : -75 dBm/MHz ~= 3.16e-11 A^2/MHz
 /*
     VLC AP
 */
-const int VLC_AP_num = 36; // @-ref'1- 36@ , @-ref'2- 4@
-const int VLC_AP_per_row = 6; // @-ref'1- 6@ , @-ref'2- 2@
-const int VLC_AP_height = 5; // m // @-ref'1- 5@ , @-ref'2- 3@
-const int VLC_AP_power = 3; // W // @-ref'1- calculate@ , @-ref'2- 3@
+const int VLC_AP_num = 4; // @-ref'1- 36@ , @-ref'2- 4@
+const int VLC_AP_per_row = 2; // @-ref'1- 6@ , @-ref'2- 2@
+const double VLC_AP_height = 5; // m // @-ref'1- 5@ , @-ref'2- 3@
+const double VLC_AP_power = 3; // W // @-ref'1- calculate@ , @-ref'2- 3@
 const int VLC_AP_bandwidth = 20; // MHz // @-ref'1- 20@ , @-ref'2- 40@
 const int VLC_AP_subchannel = 16; // @-ref'1- 16@ , @-ref'2- none@
 const double VLC_noise_power_spectral_density = 1e-15; // A^2/MHz // @-ref'1- 1e-15@ , @-ref'2- 1e-24@
@@ -149,6 +149,6 @@ const double require_data_rate_threshold = 40; //Mbps
 */
 const int effective_VLC_subchannel = VLC_AP_subchannel / 2 - 1; // The scaling factor 1/2 is due to the Hermitian symmetry
 const int effective_RF_subchannel = RF_AP_subchannel / 2 - 1;
-const int wall_num = 1;
+const int wall_num = 2;
 
 #endif // GLOBAL_CONFIGURATION_H
