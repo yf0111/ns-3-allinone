@@ -77,15 +77,20 @@ std::vector<std::vector<int>> AP_association_matrix(RF_AP_num + VLC_AP_num, std:
 */
 std::vector<std::vector<double>> VLC_LOS_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0));
 std::vector<std::vector<double>> VLC_SINR_matrix(VLC_AP_num, std::vector<double> (UE_num ,0.0)); // in dB
-std::vector<std::vector<std::vector<double>>> VLC_SINR_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (VLC_AP_subchannel, 0.0)));
+std::vector<std::vector<std::vector<double>>> VLC_SINR_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
 std::vector<std::vector<double>> VLC_data_rate_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
-std::vector<std::vector<std::vector<double>>> VLC_data_rate_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (VLC_AP_subchannel, 0.0)));
+std::vector<std::vector<std::vector<double>>> VLC_data_rate_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
+std::vector<std::vector<std::vector<double>>> VLC_allocated_power_3d(VLC_AP_num,std::vector<std::vector<double>>(VLC_AP_subchannel,std::vector<double>(UE_num,0.0)));
 /*
     RF
 */
 std::vector<double> RF_channel_gain_vector(UE_num, 0.0);
 std::vector<double> RF_SINR_vector(UE_num, 0.0);
 std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
+std::vector<std::vector<double>> RF_SINR_vector_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
+std::vector<std::vector<double>> RF_data_rate_vector_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
+std::vector<std::vector<double>> RF_allocated_power_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
+std::vector<double> RF_ICI_channel_gain_vector(UE_num,0.0);
 
 /*
     performance evaluation
@@ -159,13 +164,18 @@ static void initialize() {
 
     VLC_LOS_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0));
     VLC_SINR_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in dB
-    VLC_SINR_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (VLC_AP_subchannel, 0.0)));
+    VLC_SINR_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
     VLC_data_rate_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
-    VLC_data_rate_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (UE_num, std::vector<double> (VLC_AP_subchannel, 0.0)));
+    VLC_data_rate_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
+    VLC_allocated_power_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 250.0 / VLC_AP_num / VLC_AP_subchannel))); //W
 
     RF_channel_gain_vector = std::vector<double> (UE_num,0.0);
     RF_SINR_vector = std::vector<double> (UE_num,0.0);
     RF_data_rate_vector = std::vector<double> (UE_num, 0.0); // in Mbps
+    RF_SINR_vector_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.0));
+    RF_data_rate_vector_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.0));
+    RF_allocated_power_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.25 / RF_AP_num / RF_AP_subchannel)); //W
+    RF_ICI_channel_gain_vector = std::vector<double>(UE_num,0.0);
 
     UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
 
@@ -208,8 +218,8 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
-                       VLC_LOS_matrix, VLC_SINR_matrix, VLC_SINR_matrix_3d, VLC_data_rate_matrix, VLC_data_rate_matrix_3d,
-                       RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
+                       VLC_LOS_matrix, VLC_SINR_matrix, VLC_SINR_matrix_3d, VLC_data_rate_matrix, VLC_data_rate_matrix_3d,VLC_allocated_power_3d,
+                       RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,RF_SINR_vector_2d,RF_data_rate_vector_2d,RF_allocated_power_2d,RF_ICI_channel_gain_vector,
                         AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
                         env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
 #endif

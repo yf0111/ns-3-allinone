@@ -32,6 +32,8 @@ void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector);
 
 void printRFSINRVector(std::vector<double> &RF_SINR_vector);
 
+void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d);
+
 void printRFDataRateVector(std::vector<double> &RF_data_rate_vector);
 
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix);

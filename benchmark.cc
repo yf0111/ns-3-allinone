@@ -36,9 +36,14 @@ void benchmarkMethod(int &state,
                      std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
                      std::vector<std::vector<double>> &VLC_data_rate_matrix,
                      std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d,
+                     std::vector<std::vector<std::vector<double>>> &VLC_allocated_power_3d,
                      std::vector<double> &RF_channel_gain_vector,
                      std::vector<double> &RF_SINR_vector,
                      std::vector<double> &RF_data_rate_vector,
+                     std::vector<std::vector<double>> &RF_SINR_vector_2d,
+                     std::vector<std::vector<double>> &RF_data_rate_vector_2d,
+                     std::vector<std::vector<double>> &RF_allocated_power_2d,
+                     std::vector<double> &RF_ICI_channel_gain_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
@@ -51,7 +56,10 @@ void benchmarkMethod(int &state,
     /*
         calculate VLC LOS and VLC SINR and RF LOS and RF SINR
     */
-    precalculation(RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix,VLC_SINR_matrix_3d, VLC_data_rate_matrix,VLC_data_rate_matrix_3d, RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector, my_UE_list);
+    precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
+                   VLC_LOS_matrix, VLC_SINR_matrix,VLC_SINR_matrix_3d, VLC_data_rate_matrix,VLC_data_rate_matrix_3d,VLC_allocated_power_3d,
+                   RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector , RF_SINR_vector_2d , RF_data_rate_vector_2d , RF_allocated_power_2d,RF_ICI_channel_gain_vector,
+                   my_UE_list);
 #if LASINR
     /*
         ref'2 , LA-SINR
@@ -379,7 +387,7 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
                      std::vector<double> &RF_SINR_vector)
 {
     /*
-       initialize Step
+       initialize Step !*-*-TODO*-*- 2023/02/19
             1. network state s0
             2. value function V(s0)
             3. Policy strategy π(s0)
@@ -401,7 +409,7 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
     }
 
     /*   set init sub channel association  */
-    for(int j = 0 ; j < UE_num ; j++){
+    /*for(int j = 0 ; j < UE_num ; j++){
         new_env_state.setEnvStateRFSubChannel(0,j,1);
     }
     for(int i = 0 ; i < VLC_AP_num; i++){
@@ -423,14 +431,16 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
         }
     }
 
-    /*
-        !*-*-TODO*-*-! 20230216 : check data rate !
-    */
-    std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
+    new_env_state.printEnvStateRFSubChannel();
+    new_env_state.printEnvStateVLCSubChannel();*/
+
+
+     //   !*-*-TODO*-*-! 20230216 : check data rate
+    /*std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
     calculateDataRate(new_env_state , init_data_rate);
     for(int i = 0 ; i < UE_num ; i++){
         std::cout<<" UE : "<<i<< " data rate : "<<init_data_rate[i]<<"\n";
-    }
+    }*/
 
 
 
@@ -442,8 +452,15 @@ void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init
         /*   VLC   */
         for(int i = 0 ; i < VLC_AP_num ; i++){
             for(int j = 0; j < VLC_AP_subchannel ; j++){
+                std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j<< "\n";
                 if(now_env_state.getEnvStateVLCSubChannel(i,j,ue_index)){
+                    std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j << "\n";
+                    std::cout<<" sub channel index : " << j << "\n";
+                    std::cout<<" first term : " << ((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 << "\n";
+                    std::cout<<" VLC SINR : " << now_env_state.getEnvStateVLCSINR(i,j,ue_index) << "\n";
+                    std::cout<<" log(SINR + 1) " << log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index)) << "\n";
                     UE_data_rate += (((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 ) * log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index));
+                    std::cout<<" data rate " << UE_data_rate << "\n";
                 }
             }
         }

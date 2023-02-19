@@ -21,7 +21,7 @@
 
 
 const double PI = boost::math::constants::pi<double>();
-const double room_size = 24; // m // @-ref'1- 24@ , @-ref'2- 5@
+const double room_size = 5; // m // @-ref'1- 24@ , @-ref'2- 5@
 const double time_period = 0.5; // sec //
 const int state_num = 1; // @-ref'1- @ , @-ref'2- 1@
 
@@ -101,7 +101,7 @@ const double refractive_index = 1.5;
 const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
 // these parameters are found in senior's code(liu)
 const double fitting_coefficient = 2.88;
-const double three_dB_cutoff = 2; // MHz
+const double VLC_three_dB_cutoff = 2; // MHz
 //* const double reflection_efficiency = 0.75;
 
 /*
@@ -109,6 +109,7 @@ const double three_dB_cutoff = 2; // MHz
 */
 const double RF_carrier_frequency = 2.4; // Hz // @-ref'1- 2.4@ , @-ref'2- 2.4e9@
 const int breakpoint_distance = 5; // m // @-ref'1- none@ , @-ref'2- 5@
+const double RF_three_db_cutoff = 1;
 
 /*
     random orientation angle
