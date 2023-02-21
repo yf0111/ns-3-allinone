@@ -95,6 +95,6 @@ double estimateOneRFFrontEnd(int sunchannel_index);
 /*
     RF data rate
 */
-void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_data_rate_vector);
-double estimatOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index);
+void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector,std::vector<std::vector<double>> &RF_SINR_vector_2d, std::vector<double> &RF_data_rate_vector , std::vector<std::vector<double>> &RF_data_rate_vector_2d);
+double estimatOneRFDataRate(std::vector<double> &RF_SINR_vector, std::vector<std::vector<double>> &RF_SINR_vector_2d , int UE_index , int sub_channel);
 #endif // CHANNEL_H

@@ -1,7 +1,7 @@
 #ifndef ENV_STATE_TYPE_H
 #define ENV_STATE_TYPE_H
 
-
+#include <tuple>
 #include "global_configuration.h"
 
 /*
@@ -12,7 +12,7 @@
         service satisfaction (reliability, latency, and minimum data rate)
 */
 
-
+typedef std::tuple<double,double,double> satisfactionType;
 
 class Env_state_type{
 public:
@@ -32,11 +32,15 @@ public:
 
     void setEnvStateRFSINR (int sub_channel_index , int UE_index , double setnum);
 
-    void setEnvStateRFSINR (std::vector<std::vector<double>>  &RF_SINR_matrix);
+    void setEnvStateRFSINR (std::vector<std::vector<double>>  &RF_SINR_vector_2d);
 
     void setEnvStateUEtype (int UE_index , int setnum);
 
-    void setEnvStateSatisfaction (int UE_index , int whichSatis , double setnum);
+    void setEnvStateSatisfaction_reliability (double setnum);
+
+    void setEnvStateSatisfaction_latency (double setnum);
+
+    void setEnvStateSatisfaction_mini_data_rate (double setnum);
 
     bool getEnvStateVLCSubChannel (int VLC_AP_index ,int sub_channel_index , int UE_index);
 
@@ -48,7 +52,11 @@ public:
 
     int getEnvStateUEtype(int UE_index);
 
-    double getEnvStateSatisfaction(int UE_index , int whichSatis);
+    double getEnvStateSatisfaction_reliability(void);
+
+    double getEnvStateSatisfaction_latency(void);
+
+    double getEnvStateSatisfaction_mini_data_rate(void);
 
     void printEnvStateRFSubChannel(void);
 
@@ -67,7 +75,9 @@ private:
     std::vector<std::vector<std::vector<double>>> env_state_VLC_SINR; // (AP index, sub channel index , UE index)
     std::vector<std::vector<double>> env_state_RF_SINR; // (sub channel index , UE index)
     std::vector<int> env_state_UEtype; // (UE index) (1 is for normal service , 2 is for URLLC service)
-    std::vector<std::vector<double>> env_state_satisfaction; // (UE index , (reliability , latency , minimum data rate)(0,1,2))
+    double reliability;
+    double latency;
+    double mini_data_rate;
 };
 
 #endif // ENV_STATE_TYPE_H

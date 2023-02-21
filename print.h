@@ -36,6 +36,8 @@ void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d);
 
 void printRFDataRateVector(std::vector<double> &RF_data_rate_vector);
 
+void printRFDataRateVector2d(std::vector<std::vector<double>> &RF_data_rate_vector_2d);
+
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix);
 
 void printRfApPosition(ns3::NodeContainer &RF_AP_node);

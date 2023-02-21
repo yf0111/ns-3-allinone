@@ -159,7 +159,7 @@ void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,
                     lower_than_one_sinr_start_idx = ceil(-1 * first_term * second_term);
                 }
                 /*
-                    !*-*-NOTICE*-*-! 2023/02/06 : now lower_than_one_sinr_start_idx value is about 10~15
+                    !*-*-NOTICE*-*-! 2023/02/06 : now lower_than_one_sinr_start_idx value is about 1 or 10~15
                 */
                 for (int k = 1; k < (int)lower_than_one_sinr_start_idx; k++) {
                     VLC_SINR_matrix_3d[VLC_AP_index][k][UE_index] = estimateOneVlcSINR(VLC_LOS_matrix, VLC_AP_index, UE_index, front_end_vector, k , VLC_allocated_power_3d);
@@ -276,7 +276,6 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         double distance = getDistance(RF_AP, UE_node);
         double los = (18.7*log10(distance)) + 46.8 + (20*log10(RF_carrier_frequency/5.0));
         double path_loss_power = -( los )/10.0;
-        //double path_loss_power = -(los + nlos)/10.0;
         double rf_los_channel_gain = pow(10,path_loss_power);
         return rf_los_channel_gain;
     }
@@ -368,19 +367,29 @@ void calculateAllRFSINR(std::vector<double> &RF_SINR_vector,
         for (int UE_index = 0; UE_index < UE_num; UE_index++) {
             double interference = RF_ICI_channel_gain_vector[UE_index];
             double lower_than_one_sinr_start_idx = 0.0;
-            if (std::pow(RF_channel_gain_vector[UE_index], 2) - interference <= 0) {
+            //std::cout << "interference : " << interference << "\n";
+            //std::cout << "RF_channel_gain_vector^2 : " << RF_channel_gain_vector[UE_index] << "\n";
+             if (std::pow(RF_channel_gain_vector[UE_index], 2) - interference <= 0) {
+            /* RF_channel_gain_vector不平方就跟interference差不多 */
+            //if (RF_channel_gain_vector[UE_index] - interference <= 0) {
                 lower_than_one_sinr_start_idx = 1;
             }
             else {
                 double first_term = RF_AP_subchannel * fitting_coefficient * RF_three_db_cutoff / (RF_AP_bandwidth * 2);
+                //std::cout << "first_term : " << first_term << "\n";
                 double inner_numerator = RF_noise_power_spectral_density * RF_AP_bandwidth;
+                //std::cout << "inner_numerator : " << inner_numerator << "\n";
                 double inner_denominator = std::pow(conversion_efficiency * 2, 2) * (std::pow(RF_channel_gain_vector[UE_index], 2) - interference);
+                //std::cout << "inner_denominator : " << inner_denominator << "\n";
                 double second_term = log(inner_numerator / inner_denominator);
+                //std::cout << "second_term : " << second_term << "\n";
                 lower_than_one_sinr_start_idx = ceil(-1 * first_term * second_term);
+                //std::cout << "lower_than_one_sinr_start_idx : " << lower_than_one_sinr_start_idx << "\n";
                 /*
                     !*-*-NOTICE*-*-! : 2023/02/19 value is all 1
                 */
             }
+            //std::cout << "lower_than_one_sinr_start_idx : " << lower_than_one_sinr_start_idx << "\n\n";
             for (int k = 1; k < (int)lower_than_one_sinr_start_idx; k++) {
                 RF_SINR_vector_2d[k][UE_index] = estimateOneRFSINR(RF_channel_gain_vector, UE_index, front_end_vector, k , RF_allocated_power_2d);
             }
@@ -429,11 +438,11 @@ double estimateOneRFFrontEnd(int subchannel_index){
 
 /*
     RF data rate
-    !*-*-NOTICE*-*-! 2023/02/06 : Data rate can only be calculated after APS
+    !*-*-NOTICE*-*-! Data rate is calculated assuming that APS is done. (all sub channel is available to this UE and AP)
 */
-double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector , int UE_index){
-    /*if(PDSERT && !LASINR && !LAEQOS){
-        double data_rate = (RF_AP_bandwidth / RF_AP_subchannel) * log2(1 + RF_SINR_vector[UE_index]);
+double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector ,std::vector<std::vector<double>> &RF_SINR_vector_2d,int UE_index , int sub_channel){
+    if(PDSERT && !LASINR && !LAEQOS){
+        double data_rate = ((double)RF_AP_bandwidth / RF_AP_subchannel) * log2(1 + RF_SINR_vector_2d[sub_channel][UE_index]);
         return data_rate;
     }
     else if((LASINR || LAEQOS) && !PDSERT){
@@ -442,17 +451,26 @@ double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector , int UE_index)
     else{
         std::cout<<"**global configuration about method is WRONG!**\n";
         return 0.0;
-    }*/
+    }
 
     return 0.0;
 }
-void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_data_rate_vector){
-    /*
-    !*-*-NOTICE*-*-! : ρ not take into account yet ! (subchannel)
+void calculateALLRFDataRate(std::vector<double> &RF_SINR_vector, std::vector<std::vector<double>> &RF_SINR_vector_2d,
+                            std::vector<double> &RF_data_rate_vector , std::vector<std::vector<double>> &RF_data_rate_vector_2d){
 
-    for (int i = 0; i < UE_num; i++) {
-        RF_data_rate_vector[i] = estimateOneRFDataRate(RF_SINR_vector,i);
-    }*/
+    if(PDSERT && !LASINR && !LAEQOS){
+        for (int j = 0; j < RF_AP_subchannel ; j++){
+            for (int i = 0; i < UE_num; i++) {
+                RF_data_rate_vector_2d[j][i] = estimateOneRFDataRate(RF_SINR_vector,RF_SINR_vector_2d,i,j);
+            }
+        }
+    }
+    else if((LASINR || LAEQOS) && !PDSERT){
+
+    }
+    else{
+        std::cout<<"**global configuration about method is WRONG!**\n";
+    }
 }
 
 
@@ -485,9 +503,10 @@ void precalculation(NodeContainer  &RF_AP_node,
 
     calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector,RF_ICI_channel_gain_vector);
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector,RF_SINR_vector_2d,RF_allocated_power_2d,RF_ICI_channel_gain_vector);
+    calculateALLRFDataRate(RF_SINR_vector,RF_SINR_vector_2d,RF_data_rate_vector,RF_data_rate_vector_2d);
 
     //printRFChannelGainVector(RF_channel_gain_vector);
-
-    //*printRFSINRVector2d(RF_SINR_vector_2d);
+    //printRFSINRVector2d(RF_SINR_vector_2d);
+    //printRFDataRateVector2d(RF_data_rate_vector_2d);
 
 }

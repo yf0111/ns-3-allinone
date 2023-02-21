@@ -11,7 +11,9 @@ Env_state_type::Env_state_type(){
     env_state_VLC_SINR = std::vector<std::vector<std::vector<double>>>(VLC_AP_num , std::vector<std::vector<double>>(VLC_AP_subchannel,std::vector<double> (UE_num,0.0)));
 
     env_state_UEtype = std::vector<int> (UE_num,0);
-    env_state_satisfaction = std::vector<std::vector<double>>(UE_num , std::vector<double>(3,0.0));
+    reliability = 0.0;
+    latency = 0.0 ;
+    mini_data_rate = 0.0;
 }
 
 void Env_state_type::setEnvStateRFSubChannel(int sub_channel_index , int UE_index , int setnum){
@@ -42,16 +44,24 @@ void Env_state_type::setEnvStateRFSINR( int sub_channel_index , int UE_index , d
     env_state_RF_SINR[sub_channel_index][UE_index] = setnum;
 }
 
-void Env_state_type::setEnvStateRFSINR(std::vector<std::vector<double>> &RF_SINR_matrix){
-    env_state_RF_SINR = RF_SINR_matrix;
+void Env_state_type::setEnvStateRFSINR(std::vector<std::vector<double>> &RF_SINR_vector_2d){
+    env_state_RF_SINR = RF_SINR_vector_2d;
 }
 
 void Env_state_type::setEnvStateUEtype(int UE_index , int setnum){
     env_state_UEtype[UE_index] = setnum;
 }
 
-void Env_state_type::setEnvStateSatisfaction (int UE_index , int whichSatis , double setnum){
-    env_state_satisfaction[UE_index][whichSatis] = setnum;
+void Env_state_type::setEnvStateSatisfaction_reliability (double setnum){
+    reliability = setnum;
+}
+
+void Env_state_type::setEnvStateSatisfaction_latency(double setnum){
+    latency = setnum;
+}
+
+void Env_state_type::setEnvStateSatisfaction_mini_data_rate (double setnum){
+    mini_data_rate = setnum;
 }
 
 bool Env_state_type::getEnvStateVLCSubChannel (int VLC_AP_index , int sub_channel_index, int UE_index){
@@ -84,8 +94,16 @@ int Env_state_type::getEnvStateUEtype(int UE_index){
     return env_state_UEtype[UE_index];
 }
 
-double Env_state_type::getEnvStateSatisfaction(int UE_index , int whichSatis){
-    return env_state_satisfaction[UE_index][whichSatis];
+double Env_state_type::getEnvStateSatisfaction_reliability(void){
+    return reliability;
+}
+
+double Env_state_type::getEnvStateSatisfaction_latency(void){
+    return latency;
+}
+
+double Env_state_type::getEnvStateSatisfaction_mini_data_rate(void){
+    return mini_data_rate;
 }
 
 void Env_state_type::printEnvStateRFSubChannel(void){
@@ -161,13 +179,8 @@ void Env_state_type::printEnvStateUEtype(void){
 }
 
 void Env_state_type::printEnvStateSatisfaction(void){
-    std::cout<<" ***env_state Satisfaction matrix as below*** : \n";
-    for (int k = 0; k < UE_num; k++) {
-        std::cout << "For UE " << k << ": \n";
-        for (int p = 0; p < 3; p++) {
-            std::cout << "\t "<< env_state_satisfaction[k][p];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+    std::cout<<" ***env_state Satisfaction turple as below*** : \n";
+    std::cout << "\t reliability : " << reliability << "\n";
+    std::cout << "\t latency : " << latency << "\n";
+    std::cout << "\t mini_data_rate : " << mini_data_rate << "\n";
 }

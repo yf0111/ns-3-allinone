@@ -78,7 +78,7 @@ void benchmarkMethod(int &state,
     /*
         ref'1 , PDSERT
     */
-    PDS_ERT(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d,env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
+    PDS_ERT(AP_association_matrix,RF_SINR_vector_2d,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d,env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
 #endif // PDSERT
 
 }
@@ -355,8 +355,7 @@ double getSpectralEfficiency(double SINR){
 }
 
 void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
-             std::vector<double> &RF_SINR_vector,
-             std::vector<std::vector<double>> &VLC_SINR_matrix,
+             std::vector<std::vector<double>> &RF_SINR_vector_2d,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
@@ -375,7 +374,7 @@ void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
     /*
         initialize Step
     */
-    initializedStep(env_state_vec,value_func_vec,policy_map,dqn_vec,VLC_SINR_matrix_3d,RF_SINR_vector);
+    initializedStep(env_state_vec,value_func_vec,policy_map,dqn_vec,VLC_SINR_matrix_3d,RF_SINR_vector_2d);
 
 }
 
@@ -383,8 +382,8 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
                      std::vector<double> &value_func_vec,
                      std::map<Env_state_type,Action_type> &policy_map,
                      std::vector<double> &dqn_vec,
-                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d, // 36x10x16
-                     std::vector<double> &RF_SINR_vector)
+                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d, // 36x16x10
+                     std::vector<std::vector<double>> &RF_SINR_vector_2d)
 {
     /*
        initialize Step !*-*-TODO*-*- 2023/02/19
@@ -394,11 +393,8 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
             4. DQN , parameter θ0
     */
     Env_state_type new_env_state;
-    std::vector<std::vector<double>> RF_SINR_vector_2d = extend_vector_1to2d(RF_SINR_vector,RF_AP_subchannel);
-    new_env_state.setEnvStateRFSINR(RF_SINR_vector_2d);
-    new_env_state.setEnvStateVLCSINR(VLC_SINR_matrix_3d);
 
-    /*   set UE tyepe   */
+    /*   set UE tyepe(K/2 IIoT devices and K/2 IoT devices)   */
     for(int i = 0 ; i < UE_num ; i++){
         if(i < UE_num / 2){
             new_env_state.setEnvStateUEtype(i,1);
@@ -407,60 +403,85 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
             new_env_state.setEnvStateUEtype(i,2);
         }
     }
+    // new_env_state.printEnvStateUEtype();
 
-    /*   set init sub channel association  */
-    /*for(int j = 0 ; j < UE_num ; j++){
-        new_env_state.setEnvStateRFSubChannel(0,j,1);
-    }
-    for(int i = 0 ; i < VLC_AP_num; i++){
-        for(int j = 0 ; j < VLC_AP_subchannel ; j++){
-            int max_UE_index = -1;
-            double max_value = -DBL_MAX;
-            for(int k = 0; k < UE_num ; k++){
-                if(new_env_state.getEnvStateVLCSINR(i,j,k) > max_value){
-                    max_UE_index = k;
-                    max_value = new_env_state.getEnvStateVLCSINR(i,j,k);
-                }
-            }
-            if(max_UE_index != -1){
-                new_env_state.setEnvStateVLCSubChannel(i,j,max_UE_index,1);
-            }
-            else{
-                std::cout<<"set init sub channel association error!\n";
-            }
-        }
-    }
+    /*   set VLC SINR   */
+    new_env_state.setEnvStateVLCSINR(VLC_SINR_matrix_3d);
+    // new_env_state.printEnvStateVLCSINR();
 
-    new_env_state.printEnvStateRFSubChannel();
-    new_env_state.printEnvStateVLCSubChannel();*/
+    /*   set RF SINR   */
+    new_env_state.setEnvStateRFSINR(RF_SINR_vector_2d);
+    // new_env_state.printEnvStateRFSINR();
+
+    /*   set sub channel association(all 0)  */
+    //new_env_state.printEnvStateRFSubChannel();
+    //new_env_state.printEnvStateVLCSubChannel();
 
 
-     //   !*-*-TODO*-*-! 20230216 : check data rate
-    /*std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
+    std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
     calculateDataRate(new_env_state , init_data_rate);
-    for(int i = 0 ; i < UE_num ; i++){
+    /*for(int i = 0 ; i < UE_num ; i++){
         std::cout<<" UE : "<<i<< " data rate : "<<init_data_rate[i]<<"\n";
     }*/
 
+    /*   set reliability*/
+    new_env_state.setEnvStateSatisfaction_reliability(calculateReliability(VLC_SINR_matrix_3d , RF_SINR_vector_2d));
+    //new_env_state.printEnvStateSatisfaction();
 
 
 }
 
-void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init_data_rate){
+double calculateReliability (std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d , std::vector<std::vector<double>> &RF_SINR_vector_2d){
+    /* VLC */
+    double smaller_than_threshold_number = 0;
+    double total_number = 0;
+    for(int i = 0 ; i<VLC_AP_num ; i++){
+        for(int j = 0; j < VLC_AP_subchannel;j++){
+            for(int k = 0;k<UE_num;k++){
+                total_number += 1;
+                if(VLC_SINR_matrix_3d[i][j][k] < SINR_threshold){
+                    smaller_than_threshold_number += 1;
+                }
+            }
+        }
+    }
+    double vlc = smaller_than_threshold_number / total_number;
+
+    /* RF */
+    smaller_than_threshold_number = 0;
+    total_number = 0;
+    for(int j = 0 ; j < RF_AP_subchannel;j++){
+        for(int k =0;k<UE_num;k++){
+            total_number += 1;
+            if(RF_SINR_vector_2d[j][k] < SINR_threshold){
+                smaller_than_threshold_number += 1;
+            }
+        }
+    }
+    double rf = smaller_than_threshold_number / total_number;
+
+    return (vlc+rf) / 2.0;
+}
+
+double calculateLatency (){
+
+}
+
+void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &data_rate){
     for(int ue_index = 0 ; ue_index < UE_num ; ue_index ++){
         double UE_data_rate = 0.0;
         /*   VLC   */
         for(int i = 0 ; i < VLC_AP_num ; i++){
             for(int j = 0; j < VLC_AP_subchannel ; j++){
-                std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j<< "\n";
+                //std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j<< "\n";
                 if(now_env_state.getEnvStateVLCSubChannel(i,j,ue_index)){
-                    std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j << "\n";
-                    std::cout<<" sub channel index : " << j << "\n";
-                    std::cout<<" first term : " << ((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 << "\n";
-                    std::cout<<" VLC SINR : " << now_env_state.getEnvStateVLCSINR(i,j,ue_index) << "\n";
-                    std::cout<<" log(SINR + 1) " << log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index)) << "\n";
+                    //std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j << "\n";
+                    //std::cout<<" sub channel index : " << j << "\n";
+                    //std::cout<<" first term : " << ((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 << "\n";
+                    //std::cout<<" VLC SINR : " << now_env_state.getEnvStateVLCSINR(i,j,ue_index) << "\n";
+                    //std::cout<<" log(SINR + 1) " << log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index)) << "\n";
                     UE_data_rate += (((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 ) * log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index));
-                    std::cout<<" data rate " << UE_data_rate << "\n";
+                    //std::cout<<" data rate " << UE_data_rate << "\n";
                 }
             }
         }
@@ -468,13 +489,11 @@ void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init
         for(int j = 0 ; j < RF_AP_subchannel ; j++){
             if(now_env_state.getEnvStateRFSubChannel(j,ue_index)){
                 UE_data_rate += ((double) RF_AP_bandwidth / RF_AP_subchannel) * log(1 + now_env_state.getEnvStateRFSINR(j,ue_index)); // downlink
-                UE_data_rate += ((double) RF_AP_bandwidth / RF_AP_subchannel) * log(1 + now_env_state.getEnvStateRFSINR(j,ue_index)); // uplink
             }
         }
-        init_data_rate[ue_index] = UE_data_rate;
+        data_rate[ue_index] = UE_data_rate;
     }
 }
-
 
 std::vector<std::vector<double>> extend_vector_1to2d(std::vector<double> &extend_vector,int y_size){
     std::vector<std::vector<double>> ans_vector = std::vector<std::vector<double>>(y_size,std::vector<double>(extend_vector.size(),0.0));
@@ -483,7 +502,6 @@ std::vector<std::vector<double>> extend_vector_1to2d(std::vector<double> &extend
     }
     return ans_vector;
 }
-
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
                                std::vector<std::vector<int>> &AP_sssociation_matrix,
@@ -498,7 +516,6 @@ void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociati
         }
     }
 }
-
 
 void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list){
     for (int i = 0; i < my_UE_list.size(); i++) {

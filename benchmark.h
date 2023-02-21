@@ -36,8 +36,7 @@ void benchmarkMethod(int &state,
                      std::vector<double> &dqn_vec);
 
 void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
-             std::vector<double> &RF_SINR_vector,
-             std::vector<std::vector<double>> &VLC_SINR_matrix,
+             std::vector<std::vector<double>> &RF_SINR_vector_2d,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
@@ -67,7 +66,9 @@ void initializedStep(std::vector<Env_state_type> &env_state_vec,
                      std::map<Env_state_type,Action_type> &policy_map,
                      std::vector<double> &dqn_vec,
                      std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
-                     std::vector<double> &RF_SINR_vector);
+                     std::vector<std::vector<double>> &RF_SINR_vector_2d);
+
+double calculateReliability (std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d , std::vector<std::vector<double>> &RF_SINR_vector_2d);
 
 void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &init_data_rate);
 
