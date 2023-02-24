@@ -22,9 +22,7 @@ void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix){
         std::cout << "For VLC AP " << i << ": \n";
 
         for (int j = 0; j < UE_num; j++) {
-            std::cout << "  For UE " << j << ": \n";
-            std::cout << "  ";
-            std::cout << VLC_LOS_matrix[i][j]<<" ";
+            std::cout << "  UE " << j << " : " << VLC_LOS_matrix[i][j]<< " ";
             //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_LOS_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
@@ -38,9 +36,7 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
         for (int j = 0; j < UE_num; j++) {
-            std::cout << "  For UE " << j << ": \n";
-            std::cout << "  ";
-            std::cout<<VLC_SINR_matrix[i][j]<<" ";
+            std::cout << "  UE " << j << " : " << VLC_SINR_matrix[i][j]<< " ";
             //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
@@ -49,7 +45,7 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     std::cout << std::endl;
 }
 
-void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d){
+/*void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d){
     std::cout << "VLC SINR matrix as below: " << std::endl;
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
@@ -61,32 +57,18 @@ void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SIN
             }
             std::cout << std::endl;
         }
-        /*for (int j = 0; j < UE_num; j++) {
-            std::cout << "  For UE " << j << ": \n";
-            std::cout << "  ";
-            for (int k = 0; k <= effective_VLC_subchannel; k++) {
-                if(VLC_SINR_matrix_3d[i][j][k] == 0){
-                    std::cout << "0\t" ;
-                }
-                else{
-                    std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(15) << VLC_SINR_matrix_3d[i][j][k] << "\t";
-                }
-            }
-            std::cout << std::endl;
-        }*/
         std::cout << std::endl;
     }
     std::cout << std::endl;
-}
+}*/
 
 void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matrix){
     std::cout << "VLC data rate matrix as below: " << std::endl;
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
         for (int j = 0; j < UE_num; j++) {
-            std::cout << "  For UE " << j << ": \n";
-            std::cout << "  ";
-            std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j]<< " ";
+            std::cout << "  UE " << j << " : " << VLC_data_rate_matrix[i][j]<< " ";
+            //std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix[i][j]<< " ";
             std::cout << std::endl;
         }
         std::cout << std::endl;
@@ -94,7 +76,7 @@ void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matr
     std::cout << std::endl;
 }
 
-void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d){
+/*void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d){
     std::cout << "VLC data rate matrix as below: " << std::endl;
     for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
@@ -106,25 +88,15 @@ void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC
             }
             std::cout<<std::endl;
         }
-        /*for (int j = 0; j < UE_num; j++) {
-            std::cout << "  For UE " << j << ": \n";
-            std::cout << "  ";
-            for (int k = 0; k <= VLC_AP_subchannel; k++) {
-                std::cout << VLC_data_rate_matrix_3d[i][j][k] << " ";
-                //std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(4) << VLC_data_rate_matrix_3d[i][j][k] << " ";
-            }
-            std::cout<<std::endl;
-        }*/
         std::cout << std::endl;
     }
     std::cout << std::endl;
-}
+}*/
 
 void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector){
     std::cout << "RF Channel Gain vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
-        std::cout<<"for UE "<<i<<" : \n";
-        std::cout<<RF_channel_gain_vector[i]<<std::endl;
+        std::cout << "  UE " << i << " : " << RF_channel_gain_vector[i]<< " " << std::endl;
     }
     std::cout << std::endl;
 }
@@ -132,13 +104,12 @@ void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector){
 void printRFSINRVector(std::vector<double> &RF_SINR_vector){
     std::cout << "RF SINR vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
-        std::cout<<"for UE "<<i<<" : \n";
-        std::cout<<RF_SINR_vector[i]<<std::endl;
+        std::cout << "  UE " << i << " : " << RF_SINR_vector[i]<< " " << std::endl;
     }
     std::cout << std::endl;
 }
 
-void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d){
+/*void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d){
     std::cout << "RF SINR matrix as below: " << std::endl;
     for (int i = 0; i <= effective_RF_subchannel; i++) {
         std::cout << "For sub channel " << i << ": \n";
@@ -149,18 +120,18 @@ void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d){
         std::cout << std::endl;
     }
     std::cout << std::endl;
-}
+}*/
 
 void printRFDataRateVector(std::vector<double> &RF_data_rate_vector){
     std::cout << "RF Data Rate vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
-        std::cout<<"for UE "<<i<<" : \n";
-        std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_data_rate_vector[i]<<std::endl;
+        std::cout << "  UE " << i << " : " << RF_data_rate_vector[i]<< " " << std::endl;
+        //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<RF_data_rate_vector[i]<<std::endl;
     }
     std::cout << std::endl;
 }
 
-void printRFDataRateVector2d(std::vector<std::vector<double>> &RF_data_rate_vector_2d){
+/*void printRFDataRateVector2d(std::vector<std::vector<double>> &RF_data_rate_vector_2d){
     std::cout << "RF data rate matrix as below: " << std::endl;
     for (int i = 0; i <= effective_RF_subchannel; i++) {
         std::cout << "For sub channel " << i << ": \n";
@@ -171,7 +142,7 @@ void printRFDataRateVector2d(std::vector<std::vector<double>> &RF_data_rate_vect
         std::cout << std::endl;
     }
     std::cout << std::endl;
-}
+}*/
 
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix){
 

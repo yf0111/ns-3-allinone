@@ -7,34 +7,31 @@
 /*
 
 2023/01/05 : //* means liu_code exist
-2023/01/10 :
-    /ref'1/ means that this func.(var.) is used for reference : Learning-Based Energy-Efficient Resource Management by Heterogeneous RF/VLC for Ultra-Reliable Low-Latency Industrial IoT Networks
-    /ref'2/ means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi-WiFi network using a novel Link Aggregation Framework
+    /ref'1/ means that this func.(var.) is used for reference : Reinforcement Learning-Based Near-Optimal Load Balancing for Heterogeneous LiFi WiFi Network
+    /ref'2/ means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi WiFi network using a novel Link Aggregation Framework
 */
 
 #define DEBUG_MODE 0
 #define PROPOSED_METHOD 0
 #define LASINR 0
 #define LAEQOS 0
-#define PDSERT 1
+#define RLLB 1
 #define PCSBM 1 // can change
 
 
 const double PI = boost::math::constants::pi<double>();
-const double room_size = 5; // m // @-ref'1- 24@ , @-ref'2- 5@
+const double EE = boost::math::constants::e<double>();
+const double room_size = 5; // m // @-ref'1- 5@ , @-ref'2- 5@
 const double time_period = 0.5; // sec //
-const int state_num = 1; // @-ref'1- @ , @-ref'2- 1@
+const int state_num = 1; // @-ref'1- ?@ , @-ref'2- 1@
 
 
-/*
-    RF AP
-*/
+/*  RF AP  */
 const int RF_AP_num = 1;
-const int RF_AP_height = 5; // m //  @-ref'1- 5@ , @-ref'2- 3@
-const int RF_AP_bandwidth = 10; // MHz // @-ref'1- 10@ , @-ref'2- 20@
-const int RF_AP_subchannel = 32; // number of sub channel // @-ref'1- 32@ , @-ref'2- none@
-const double RF_AP_power = 0.03; // W // @-ref'1- 0.03@ , @-ref'2- 0.1@
-const double RF_noise_power_spectral_density = 5.01e-27 ; // A^2/MHz // @-ref'1- 2.0e8@ , @-ref'2- 3.16e-11@
+const int RF_AP_height = 3; // m //
+const int RF_AP_bandwidth = 20; // MHz //
+const double RF_AP_power = 0.1; // W //
+const double RF_noise_power_spectral_density = 3.98e-15 ; // A^2/MHz // @-ref'1- 3.98e-15@ , @-ref'2- 3.16e-11@
 
 /*
 dBm -> A^2
@@ -43,78 +40,48 @@ https://www.convertworld.com/zh-hant/power/dbm.html
 dBm -> W = A^2 * Ω
 ( Ω = 1 )
 
-ref'1 : N^RF_0 = 173 dBm/Hz =  2.0e8A^2/MHz
-(if typo)ref'1 : N^RF_0 = -173 dBm/Hz = 5.01e-27 A^2/MHz
+ref'1 : -174 dBm/Hz = 3.98e-21 W/Hz = 3.98e-15 A^2/MHz
 ref'2 : -75 dBm/MHz ~= 3.16e-11 A^2/MHz
 
 */
 
 
-/*
-    VLC AP
-*/
-const int VLC_AP_num = 4; // @-ref'1- 36@ , @-ref'2- 4@
-const int VLC_AP_per_row = 2; // @-ref'1- 6@ , @-ref'2- 2@
-const double VLC_AP_height = 5; // m // @-ref'1- 5@ , @-ref'2- 3@
-const double VLC_AP_power = 3; // W // @-ref'1- calculate@ , @-ref'2- 3@
-const int VLC_AP_bandwidth = 20; // MHz // @-ref'1- 20@ , @-ref'2- 40@
-const int VLC_AP_subchannel = 16; // @-ref'1- 16@ , @-ref'2- none@
+/*  VLC AP  */
+const int VLC_AP_num = 4;
+const int VLC_AP_per_row = 2;
+const double VLC_AP_height = 3; // m //
+const double VLC_AP_power = 3; // W //
+const int VLC_AP_bandwidth = 40; // MHz //
 const double VLC_noise_power_spectral_density = 1e-15; // A^2/MHz // @-ref'1- 1e-15@ , @-ref'2- 1e-24@
 /*
 ref'1 : 1e-21 A^2/Hz = 1e-15 A^2/MHz
 ref'2 : -210 dBm/MHz ~= 1e-24 A^2/MHz
 */
-const double conversion_efficiency = 0.5; // A/W // @-ref'1- 0.5@ , @-ref'2- 0.53@  optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
+const double conversion_efficiency = 0.53; // A/W // optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 
-// these values are found in "Resource Allocation in LiFi OFDMA Systems"
-//* const int subcarrier_num = 40; // M = 64
-//* const int effective_subcarrier_num = subcarrier_num / 2 - 1; // M_e = M/2 - 1
-//* const int time_slot_num = 32; // K = 20
-
-
-/*
-    UE
-    !*-*-NOTICE*-*-! 20230113 : demand_upper_bound NEED change
-*/
-const int UE_num = 10; // @-ref'1- 120@ , @-ref'2- 10@
-const double UE_height = 0; // m // @-ref'1- calculate@ , @-ref'2- 0@
-/*
-!*-*-TODO*-*-! : ref'1 need calculate
-
-UE_height = a number of devices are randomly distributed at four different heights : 0.5 , 1 , 1.5 , 2 m
-
-*/
-
-
+/*  UE  */
+const int UE_num = 10; // @-ref'1- ?@ , @-ref'2- 10@
+const double UE_height = 1; // m // @-ref'1- 1@ , @-ref'2- 0@
+const double avg_speed = 1.0; // m/s
+const double pause_time = 10.0;
 //* const int demand_upper_bound = 100;
-//* const double avg_speed = 1.0; // m/s
-//* const double pause_time = 0.0;
 
-/*
-    VLC channel
-*/
-const double field_of_view = 90.0; // semi degree // @-ref'1- 90.0@ , @-ref'2- 60.0@
+
+/*  VLC channel  */
+const double field_of_view = 60.0; // semi degree //
 const double PHI_half = 60.0; // semi-angle at half-illumination in degree
 const double filter_gain = 1.0;
 const double refractive_index = 1.5;
 const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
-// these parameters are found in senior's code(liu)
-const double fitting_coefficient = 2.88;
-const double VLC_three_dB_cutoff = 2; // MHz
-//* const double reflection_efficiency = 0.75;
 
-/*
-    RF Channel
-*/
-const double RF_carrier_frequency = 2.4; // Hz // @-ref'1- 2.4@ , @-ref'2- 2.4e9@
-const int breakpoint_distance = 5; // m // @-ref'1- none@ , @-ref'2- 5@
+/*  RF Channel  */
+const double RF_carrier_frequency = 2.4e9; // Hz //
+const double breakpoint_distance = 0.05; // m // @-ref'1- 0.05@ , @-ref'2- 5@
 const double RF_three_db_cutoff = 1;
 
-/*
-    random orientation angle
-    2023/01/11 : UE random orientation
-*/
+
+/*  random orientation angle (UE random orientation)  */
 const double coherence_time = 130.0; // ms
 const double sampling_time = 13.0; // ms
 const double angle_mean = 30.0; // degree
@@ -124,35 +91,13 @@ const double c_0 = (1.0 - c_1) * angle_mean;
 const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_variance;
 
 
-/*
-    parameters related to demand discounting ratio
-*/
-//* const double initial_discount = 0.8;
-//* const double delta_p = 0.05;
-//* const double expel_ratio = 0.5;
-
-
-/*
-    the period of PCSBM (in states)
-*/
-// const int complete_config_period = state_num;
-
-
-/*
-    ref'2 system parameter
-*/
+/*  ref'2 system parameter  */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
 const double require_data_rate_threshold = 40; //Mbps
 
-/*
-    ref'1 system parameter
-*/
-const int effective_VLC_subchannel = VLC_AP_subchannel / 2 - 1; // The scaling factor 1/2 is due to the Hermitian symmetry
-const int effective_RF_subchannel = RF_AP_subchannel / 2 - 1;
-const int wall_num = 1;
-const double SINR_threshold = 5; //dB
-const double T_ab = 0.1; //ms
-const double T_rp = 0.3; //ms
+
+/*  ref'1 system parameter  */
+const double reflection_coe = 0.8; // ρ ,walls reflectivity
 
 #endif // GLOBAL_CONFIGURATION_H

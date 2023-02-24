@@ -16,8 +16,6 @@
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
 #include "global_configuration.h"
-#include "action_type.h"
-#include "env_state_type.h"
 
 /*
     table of conversion from SINR to spectral efficiency
@@ -33,32 +31,17 @@ void benchmarkMethod(int &state,
                      NodeContainer &UE_nodes,
                      std::vector<std::vector<double>> &VLC_LOS_matrix,
                      std::vector<std::vector<double>> &VLC_SINR_matrix,
-                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
                      std::vector<std::vector<double>> &VLC_data_rate_matrix,
-                     std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d,
-                     std::vector<std::vector<std::vector<double>>> &VLC_allocated_power_3d,
                      std::vector<double> &RF_channel_gain_vector,
                      std::vector<double> &RF_SINR_vector,
                      std::vector<double> &RF_data_rate_vector,
-                     std::vector<std::vector<double>> &RF_SINR_vector_2d,
-                     std::vector<std::vector<double>> &RF_data_rate_vector_2d,
-                     std::vector<std::vector<double>> &RF_allocated_power_2d,
-                     std::vector<double> &RF_ICI_channel_gain_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
-                     std::vector<double> &UE_final_data_rate_vector,
-                     std::vector<Env_state_type> &env_state_vec,
-                     std::vector<Action_type> &action_vec,
-                     std::vector<double> &value_func_vec,
-                     std::map<Env_state_type,Action_type> &policy_map,
-                     std::vector<double> &dqn_vec)
+                     std::vector<double> &UE_final_data_rate_vector)
 {
-    /*
-        calculate VLC LOS and VLC SINR and RF LOS and RF SINR
-    */
     precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
-                   VLC_LOS_matrix, VLC_SINR_matrix,VLC_SINR_matrix_3d, VLC_data_rate_matrix,VLC_data_rate_matrix_3d,VLC_allocated_power_3d,
-                   RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector , RF_SINR_vector_2d , RF_data_rate_vector_2d , RF_allocated_power_2d,RF_ICI_channel_gain_vector,
+                   VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
+                   RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                    my_UE_list);
 #if LASINR
     /*
@@ -74,12 +57,12 @@ void benchmarkMethod(int &state,
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
 #endif // LAEQOS
 
-#if PDSERT
+#if RLLB
     /*
-        ref'1 , PDSERT
+        ref'1 , RLLB
     */
-    PDS_ERT(AP_association_matrix,RF_SINR_vector_2d,UE_final_data_rate_vector,my_UE_list,VLC_SINR_matrix_3d,env_state_vec,action_vec,value_func_vec,policy_map,dqn_vec);
-#endif // PDSERT
+    RL_LB(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix);
+#endif // RLLB
 
 }
 
@@ -354,153 +337,58 @@ double getSpectralEfficiency(double SINR){
     return it->second;
 }
 
-void PDS_ERT(std::vector<std::vector<int>> &AP_association_matrix,
-             std::vector<std::vector<double>> &RF_SINR_vector_2d,
-             std::vector<double> &UE_final_data_rate_vector,
-             std::vector<MyUeNode> &my_UE_list,
-             std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d,
-             std::vector<Env_state_type> &env_state_vec,
-             std::vector<Action_type> &action_vec,
-             std::vector<double> &value_func_vec,
-             std::map<Env_state_type,Action_type> &policy_map,
-             std::vector<double> &dqn_vec)
+void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
+           std::vector<double> &RF_SINR_vector,
+           std::vector<std::vector<double>> &VLC_SINR_matrix)
 {
-
-    /*
-        URLLC requirement + Minimum data rate Requirements
+    /* state
+        1. SNR between the user and various APs (UE_num x 3 , entry is Wifi SNR + highest VLC SINR + second VLC SINR)
+        2. Current load on each AP (AP_num , entry is number of users connected to AP <int>)
     */
 
-
-    /*
-        initialize Step
+    /* action
+        0. WiFi AP
+        1. LiFi AP 0 (highest SINR)
+        2. LiFi AP 1 (second SINR)
+        3. WiFi + LiFi AP (highest SINR)
+        4. WiFi + LiFi AP (second SINR)
     */
-    initializedStep(env_state_vec,value_func_vec,policy_map,dqn_vec,VLC_SINR_matrix_3d,RF_SINR_vector_2d);
+
+    /*  state  */
+    std::vector<std::vector<double>> SINR_matrix = combineSINRmatrix(VLC_SINR_matrix,RF_SINR_vector); //  (RF + VLC SINR) x UE
+    std::vector<std::vector<double>> State_SINR = SINR_matrix_to_AP_index(SINR_matrix); // UE x 3
+    std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+
 
 }
 
-void initializedStep(std::vector<Env_state_type> &env_state_vec,
-                     std::vector<double> &value_func_vec,
-                     std::map<Env_state_type,Action_type> &policy_map,
-                     std::vector<double> &dqn_vec,
-                     std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d, // 36x16x10
-                     std::vector<std::vector<double>> &RF_SINR_vector_2d)
-{
-    /*
-       initialize Step !*-*-TODO*-*- 2023/02/19
-            1. network state s0
-            2. value function V(s0)
-            3. Policy strategy π(s0)
-            4. DQN , parameter θ0
-    */
-    Env_state_type new_env_state;
+std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<double> &RF_SINR_vector){
+    std::vector<std::vector<double>> combined_SINR_matrix = std::vector<std::vector<double>> (RF_AP_num+VLC_AP_num,std::vector<double>(UE_num,0.0));
+    for(int i = 0; i < RF_AP_num + VLC_AP_num ; i++){
+        if( i < RF_AP_num)
+            combined_SINR_matrix[i] = RF_SINR_vector;
+        else
+            combined_SINR_matrix[i] = VLC_SINR_matrix[i-1];
+    }
+    return combined_SINR_matrix;
+}
 
-    /*   set UE tyepe(K/2 IIoT devices and K/2 IoT devices)   */
+std::vector<std::vector<double>> SINR_matrix_to_AP_index(std::vector<std::vector<double>> &SINR_matrix){
+    std::vector<std::vector<double>> State_SINR = std::vector<std::vector<double>> (UE_num,std::vector<double>(3,0.0));
     for(int i = 0 ; i < UE_num ; i++){
-        if(i < UE_num / 2){
-            new_env_state.setEnvStateUEtype(i,1);
-        }
-        else{
-            new_env_state.setEnvStateUEtype(i,2);
-        }
-    }
-    // new_env_state.printEnvStateUEtype();
-
-    /*   set VLC SINR   */
-    new_env_state.setEnvStateVLCSINR(VLC_SINR_matrix_3d);
-    // new_env_state.printEnvStateVLCSINR();
-
-    /*   set RF SINR   */
-    new_env_state.setEnvStateRFSINR(RF_SINR_vector_2d);
-    // new_env_state.printEnvStateRFSINR();
-
-    /*   set sub channel association(all 0)  */
-    //new_env_state.printEnvStateRFSubChannel();
-    //new_env_state.printEnvStateVLCSubChannel();
-
-
-    std::vector<double> init_data_rate = std::vector<double> (UE_num,0.0);
-    calculateDataRate(new_env_state , init_data_rate);
-    /*for(int i = 0 ; i < UE_num ; i++){
-        std::cout<<" UE : "<<i<< " data rate : "<<init_data_rate[i]<<"\n";
-    }*/
-
-    /*   set reliability*/
-    new_env_state.setEnvStateSatisfaction_reliability(calculateReliability(VLC_SINR_matrix_3d , RF_SINR_vector_2d));
-    //new_env_state.printEnvStateSatisfaction();
-
-
-}
-
-double calculateReliability (std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d , std::vector<std::vector<double>> &RF_SINR_vector_2d){
-    /* VLC */
-    double smaller_than_threshold_number = 0;
-    double total_number = 0;
-    for(int i = 0 ; i<VLC_AP_num ; i++){
-        for(int j = 0; j < VLC_AP_subchannel;j++){
-            for(int k = 0;k<UE_num;k++){
-                total_number += 1;
-                if(VLC_SINR_matrix_3d[i][j][k] < SINR_threshold){
-                    smaller_than_threshold_number += 1;
-                }
+        double highest_AP_value = -DBL_MAX ;
+        double second_AP_value = -DBL_MAX ;
+        for(int j = 1 ; j < VLC_AP_num + 1 ; j++){
+            if(SINR_matrix[j][i] > highest_AP_value){
+                second_AP_value = highest_AP_value;
+                highest_AP_value = SINR_matrix[j][i];
             }
         }
+        State_SINR[i][0] = SINR_matrix[0][i];
+        State_SINR[i][1] = (highest_AP_value < 0 )? 0.0 : highest_AP_value;
+        State_SINR[i][2] = (second_AP_value < 0 )? 0.0 : second_AP_value;
     }
-    double vlc = smaller_than_threshold_number / total_number;
-
-    /* RF */
-    smaller_than_threshold_number = 0;
-    total_number = 0;
-    for(int j = 0 ; j < RF_AP_subchannel;j++){
-        for(int k =0;k<UE_num;k++){
-            total_number += 1;
-            if(RF_SINR_vector_2d[j][k] < SINR_threshold){
-                smaller_than_threshold_number += 1;
-            }
-        }
-    }
-    double rf = smaller_than_threshold_number / total_number;
-
-    return (vlc+rf) / 2.0;
-}
-
-double calculateLatency (){
-
-}
-
-void calculateDataRate(Env_state_type &now_env_state , std::vector<double> &data_rate){
-    for(int ue_index = 0 ; ue_index < UE_num ; ue_index ++){
-        double UE_data_rate = 0.0;
-        /*   VLC   */
-        for(int i = 0 ; i < VLC_AP_num ; i++){
-            for(int j = 0; j < VLC_AP_subchannel ; j++){
-                //std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j<< "\n";
-                if(now_env_state.getEnvStateVLCSubChannel(i,j,ue_index)){
-                    //std::cout<<" ue | VLC | sub channel : "<< ue_index << "\t" << i << "\t" << j << "\n";
-                    //std::cout<<" sub channel index : " << j << "\n";
-                    //std::cout<<" first term : " << ((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 << "\n";
-                    //std::cout<<" VLC SINR : " << now_env_state.getEnvStateVLCSINR(i,j,ue_index) << "\n";
-                    //std::cout<<" log(SINR + 1) " << log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index)) << "\n";
-                    UE_data_rate += (((double)VLC_AP_bandwidth / VLC_AP_subchannel) / 2.0 ) * log(1 + now_env_state.getEnvStateVLCSINR(i,j,ue_index));
-                    //std::cout<<" data rate " << UE_data_rate << "\n";
-                }
-            }
-        }
-        /*   RF   */
-        for(int j = 0 ; j < RF_AP_subchannel ; j++){
-            if(now_env_state.getEnvStateRFSubChannel(j,ue_index)){
-                UE_data_rate += ((double) RF_AP_bandwidth / RF_AP_subchannel) * log(1 + now_env_state.getEnvStateRFSINR(j,ue_index)); // downlink
-            }
-        }
-        data_rate[ue_index] = UE_data_rate;
-    }
-}
-
-std::vector<std::vector<double>> extend_vector_1to2d(std::vector<double> &extend_vector,int y_size){
-    std::vector<std::vector<double>> ans_vector = std::vector<std::vector<double>>(y_size,std::vector<double>(extend_vector.size(),0.0));
-    for(int j = 0 ; j < extend_vector.size() ; j++){
-        ans_vector[0][j] = extend_vector[j];
-    }
-    return ans_vector;
+    return State_SINR;
 }
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
