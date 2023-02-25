@@ -43,6 +43,16 @@ std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<doubl
 
 std::vector<std::vector<double>> SINR_matrix_to_AP_index(std::vector<std::vector<double>> &SINR_matrix);
 
+std::vector<int> AP_association_matrix_to_UE_numbers(std::vector<std::vector<int>> &AP_association_matrix);
+
+double calculatedR1(std::vector<int> &UE_type,std::vector<int> &pre_AP_association,std::vector<int> &AP_association,
+                 std::vector<std::vector<double>> &VLC_data_rate_matrix,std::vector<double> &RF_data_rate_vector,
+                 std::vector<int> &State_AP_load);
+
+double calculatedR2(std::vector<int> &UE_type,std::vector<int> &pre_AP_association,std::vector<int> &AP_association,
+                 std::vector<std::vector<double>> &VLC_data_rate_matrix,std::vector<double> &RF_data_rate_vector,
+                 std::vector<int> &State_AP_load);
+
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,std::vector<std::vector<int>> &AP_sssociation_matrix,std::vector<MyUeNode> &my_UE_list);
 
 void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list);

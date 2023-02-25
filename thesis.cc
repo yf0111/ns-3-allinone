@@ -107,6 +107,7 @@ std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
     !*-*-NEW*-*-!
     ref'1 : for reference 1
 */
+
 /*std::vector<Action_type> action_vec(state_num);
 std::vector<Env_state_type> env_state_vec(state_num);
 std::vector<double> value_func_vec(state_num,0.0);

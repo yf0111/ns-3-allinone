@@ -98,6 +98,9 @@ const double require_data_rate_threshold = 40; //Mbps
 
 
 /*  ref'1 system parameter  */
-const double reflection_coe = 0.8; // ρ ,walls reflectivity
+//const double reflection_coe = 0.8; // ρ ,walls reflectivity
+const double eta_hho = 0.9;
+const double eta_vho = 0.6;
+
 
 #endif // GLOBAL_CONFIGURATION_H

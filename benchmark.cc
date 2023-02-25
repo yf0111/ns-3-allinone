@@ -356,10 +356,47 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
 
     /*  state  */
     std::vector<std::vector<double>> SINR_matrix = combineSINRmatrix(VLC_SINR_matrix,RF_SINR_vector); //  (RF + VLC SINR) x UE
-    std::vector<std::vector<double>> State_SINR = SINR_matrix_to_AP_index(SINR_matrix); // UE x 3
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
 
+    std::vector<std::vector<double>> State_SINR = SINR_matrix_to_AP_index(SINR_matrix); // UE x 3
+    std::vector<int> State_AP_load = AP_association_matrix_to_UE_numbers(local_AP_association_matrix);
 
+    /*  set UE type  */
+    std::vector<int> UE_type = std::vector<int>(UE_num,0); // 1 for SAP , 2 for LA
+    for(int i = 0 ; i < UE_num ; i++){
+        if( i < LA_UE_num)
+            UE_type[i] = 2;
+        else
+            UE_type[i] = 1;
+    }
+
+    /* std::vector<int> AP_association (ue)
+         0 : means that this UE connected to WiFi
+         1 : means that this UE connected to LiFi1
+         2 : means that this UE connected to LiFi2
+         3 : means that this UE connected to LiFi3
+         4 : means that this UE connected to LiFi4
+         5 : means that this UE connected to WiFi and LiFi1
+         6 : means that this UE connected to WiFi and LiFi2
+         7 : means that this UE connected to WiFi and LiFi3
+         8 : means that this UE connected to WiFi and LiFi4
+         -1 (default) : means that no AP association for this UE
+    */
+
+}
+
+std::vector<int> AP_association_matrix_to_UE_numbers(std::vector<std::vector<int>> &AP_association_matrix){
+    std::vector<int> AP_serve_UE_numbers = std::vector<int>(RF_AP_num + VLC_AP_num , 0);
+    for(int i = 0 ; i < RF_AP_num + VLC_AP_num ; i++){
+        int served_UE_number = 0;
+        for(int j = 0 ; j < UE_num ; j++){
+            if(AP_association_matrix[i][j] == 1){
+                served_UE_number += 1;
+            }
+        }
+        AP_serve_UE_numbers[i] = served_UE_number;
+    }
+    return AP_serve_UE_numbers;
 }
 
 std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<double> &RF_SINR_vector){
@@ -389,6 +426,114 @@ std::vector<std::vector<double>> SINR_matrix_to_AP_index(std::vector<std::vector
         State_SINR[i][2] = (second_AP_value < 0 )? 0.0 : second_AP_value;
     }
     return State_SINR;
+}
+
+double calculatedR1(std::vector<int> &UE_type,
+                 std::vector<int> &pre_AP_association,
+                 std::vector<int> &AP_association,
+                 std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                 std::vector<double> &RF_data_rate_vector,
+                 std::vector<int> State_AP_load){
+    double total_throughput = 0.0;
+    for(int i = 0 ;i < UE_num ; i++){
+        double throughput = 0.0;
+        if(UE_type[i] == 1){ //SAP
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] != 0 && AP_association[i] != 0){ // LiFi to LiFi
+                    eta = eta_hho;
+                }
+                else if(pre_AP_association[i] == 0 && AP_association[i] != 0){ // WiFi to LiFi
+                    eta = eta_vho;
+                }
+                double data_rate = 0.0;
+                if(AP_association[i] < 5)
+                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]][i];
+                else
+                    std::cout << "SAP UE AP association is wrong!\n";
+                throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
+            }
+        }
+        else if(UE_type[i] == 2){ //LA
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] > 4 && AP_association[i] > 4){ // WiFi same , LiFi change
+                    eta = eta_hho;
+                }
+                else{
+                    eta = eta_vho;
+                }
+                if(AP_association[i] > 4){
+                    throughput = eta * (RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-4][i] * (1.0 / State_AP_load[AP_association[i]-4]));
+                }
+                else{
+                    throughput = eta * (AP_association[i] == 0)? RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : VLC_data_rate_matrix[AP_association[i]][i] * (1.0 / State_AP_load[AP_association[i]]);
+                }
+            }
+        }
+        total_throughput += throughput;
+    }
+    return total_throughput / UE_num;
+}
+
+double calculatedR2(std::vector<int> &UE_type,
+                 std::vector<int> &pre_AP_association,
+                 std::vector<int> &AP_association,
+                 std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                 std::vector<double> &RF_data_rate_vector,
+                 std::vector<int> State_AP_load){
+    double total_throughput = 0.0;
+    for(int i = 0 ;i < UE_num ; i++){
+        double throughput = 0.0;
+        if(UE_type[i] == 1){ //SAP
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] != 0 && AP_association[i] != 0){ // LiFi to LiFi
+                    eta = eta_hho;
+                }
+                else if(pre_AP_association[i] == 0 && AP_association[i] != 0){ // WiFi to LiFi
+                    eta = eta_vho;
+                }
+                double data_rate = 0.0;
+                if(AP_association[i] < 5)
+                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]][i];
+                else
+                    std::cout << "SAP UE AP association is wrong!\n";
+                throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
+            }
+        }
+        else if(UE_type[i] == 2){ //LA
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] > 4 && AP_association[i] > 4){ // WiFi same , LiFi change
+                    eta = eta_hho;
+                }
+                else{
+                    eta = eta_vho;
+                }
+                if(AP_association[i] > 4){
+                    throughput = eta * (RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-4][i] * (1.0 / State_AP_load[AP_association[i]-4]));
+                }
+                else{
+                    throughput = eta * (AP_association[i] == 0)? RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : VLC_data_rate_matrix[AP_association[i]][i] * (1.0 / State_AP_load[AP_association[i]]);
+                }
+            }
+        }
+        total_throughput += throughput;
+    }
+    return total_throughput / UE_num;
 }
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
