@@ -94,13 +94,16 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 /*  ref'2 system parameter  */
 const double la_overhead = 0.8;
 const int LA_UE_num = 4;
-const double require_data_rate_threshold = 40; //Mbps
+const double require_data_rate_threshold = 40; // Mbps
 
 
 /*  ref'1 system parameter  */
 //const double reflection_coe = 0.8; // ρ ,walls reflectivity
 const double eta_hho = 0.9;
 const double eta_vho = 0.6;
-
-
+const double C_one = 100; // C1
+const double C_two = 1000; // C2
+const double discount_factor = 0.9; // γ // gamma
+const double delta = 0.01; //
+const int total_episodes = 1;
 #endif // GLOBAL_CONFIGURATION_H

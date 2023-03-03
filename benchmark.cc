@@ -61,7 +61,7 @@ void benchmarkMethod(int &state,
     /*
         ref'1 , RLLB
     */
-    RL_LB(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix);
+    RL_LB(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,my_UE_list,VLC_data_rate_matrix,RF_data_rate_vector);
 #endif // RLLB
 
 }
@@ -339,14 +339,20 @@ double getSpectralEfficiency(double SINR){
 
 void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
            std::vector<double> &RF_SINR_vector,
-           std::vector<std::vector<double>> &VLC_SINR_matrix)
+           std::vector<std::vector<double>> &VLC_SINR_matrix,
+           std::vector<MyUeNode> &my_UE_list,
+           std::vector<std::vector<double>> &VLC_data_rate_matrix,
+           std::vector<double> &RF_data_rate_vector)
 {
+    // https://blog.csdn.net/u013405574/article/details/50903987
+    // https://blog.csdn.net/u012319493/article/details/52884861
+
+    srand(time(NULL));
     /* state
         1. SNR between the user and various APs (UE_num x 3 , entry is Wifi SNR + highest VLC SINR + second VLC SINR)
         2. Current load on each AP (AP_num , entry is number of users connected to AP <int>)
-    */
 
-    /* action
+       action
         0. WiFi AP
         1. LiFi AP 0 (highest SINR)
         2. LiFi AP 1 (second SINR)
@@ -354,14 +360,20 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
         4. WiFi + LiFi AP (second SINR)
     */
 
-    /*  state  */
+    /*  init state  */
     std::vector<std::vector<double>> SINR_matrix = combineSINRmatrix(VLC_SINR_matrix,RF_SINR_vector); //  (RF + VLC SINR) x UE
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+    std::vector<std::vector<double>> State_SINR = SINR_matrix_to_two_high_SINR(SINR_matrix); // UE x 3
+    std::vector<std::vector<int>> State_SINR_VLC_index = SINR_matrix_to_two_high_AP_index(SINR_matrix); // UE x 2
+    /* State_SINR
+        UE[0] WiFi SNR, LiFi SINR, LiFi SINR
+        UE[1] WiFi SNR, LiFi SINR, LiFi SINR
+        UE[2] WiFi SNR, LiFi SINR, LiFi SINR
+        ...
+        UE[UE_num - 1] WiFi SNR, LiFi SINR, LiFi SINR
+    */
 
-    std::vector<std::vector<double>> State_SINR = SINR_matrix_to_AP_index(SINR_matrix); // UE x 3
-    std::vector<int> State_AP_load = AP_association_matrix_to_UE_numbers(local_AP_association_matrix);
-
-    /*  set UE type  */
+    /*  init UE type  */
     std::vector<int> UE_type = std::vector<int>(UE_num,0); // 1 for SAP , 2 for LA
     for(int i = 0 ; i < UE_num ; i++){
         if( i < LA_UE_num)
@@ -370,19 +382,124 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
             UE_type[i] = 1;
     }
 
-    /* std::vector<int> AP_association (ue)
-         0 : means that this UE connected to WiFi
-         1 : means that this UE connected to LiFi1
-         2 : means that this UE connected to LiFi2
-         3 : means that this UE connected to LiFi3
-         4 : means that this UE connected to LiFi4
-         5 : means that this UE connected to WiFi and LiFi1
-         6 : means that this UE connected to WiFi and LiFi2
-         7 : means that this UE connected to WiFi and LiFi3
-         8 : means that this UE connected to WiFi and LiFi4
-         -1 (default) : means that no AP association for this UE
+    /*  init AP assignment
+            std::vector<int> AP_association (ue)
+             0 : means that this UE connected to WiFi
+             1 : means that this UE connected to LiFi0
+             2 : means that this UE connected to LiFi1
+             3 : means that this UE connected to LiFi2
+             4 : means that this UE connected to LiFi3
+             5 : means that this UE connected to WiFi and LiFi0
+             6 : means that this UE connected to WiFi and LiFi1
+             7 : means that this UE connected to WiFi and LiFi2
+             8 : means that this UE connected to WiFi and LiFi3
+             -1 (default) : means that no AP association for this UE
     */
+    std::vector<int> init_AP_association = std::vector<int>(UE_num,-1);
+    local_AP_association_matrix = AP_association_vector_to_matrix(init_AP_association);
 
+    /*  Reward
+         [0] std::vector<int> init AP association's R1
+         [1] std::vector<int> next AP association's R1
+         [2] std::vector<int> next AP association
+         ...
+         [8] std::vector<int> next AP association
+         ...
+         [64] std::vector<int> next AP association
+    */
+    std::vector<double> Reward_one;
+
+
+    /*  Q
+         [0] std::vector<int> init AP association
+         [1] std::vector<int> next possible AP association
+         [2] std::vector<int> next possible AP association
+         ...
+         [8] std::vector<int> next possible AP association
+         ...
+         [64] std::vector<int> next possible AP association
+    */
+    std::vector<std::vector<int>> Q;
+
+
+    int episodes = 0;
+    while (episodes++ < total_episodes){
+
+        // random choose a init action
+        std::vector<int> now_AP_association = std::vector<int>(UE_num,-1);
+        for(int i = 0 ; i < UE_num ; i++){
+            if(UE_type[i] == 1){ // SAP
+                now_AP_association[i] = rand()%6;
+                if(now_AP_association[i] == 5) now_AP_association[i] = -1;
+            }
+            if(UE_type[i] == 2){ // LA
+                now_AP_association[i] = rand()%10;
+                if(now_AP_association[i] == 9) now_AP_association[i] = -1;
+            }
+        }
+        local_AP_association_matrix = AP_association_vector_to_matrix(now_AP_association);
+        std::vector<int> State_AP_load = AP_association_matrix_to_UE_numbers (local_AP_association_matrix);
+
+        Q.push_back(now_AP_association);
+        Reward_one.push_back(calculatedR1(UE_type,init_AP_association,now_AP_association,VLC_data_rate_matrix,RF_data_rate_vector,State_AP_load));
+
+        // random choose a next action
+        std::vector<int> next_AP_association = choose_next_AP_association(SINR_matrix,UE_type,State_SINR_VLC_index);
+        /*for(int i = 0 ; i < UE_num ; i++){
+            if(UE_type[i] == 1){ // SAP
+                next_AP_association[i] = rand()%6;
+                if(next_AP_association[i] == 5) next_AP_association[i] = -1;
+            }
+            if(UE_type[i] == 2){ // LA
+                next_AP_association[i] = rand()%10;
+                if(next_AP_association[i] == 9) next_AP_association[i] = -1;
+            }
+        }
+        Q.push_back(next_AP_association);*/
+
+
+
+    }
+}
+std::vector<int> choose_next_AP_association(std::vector<std::vector<double>> &SINR_matrix,std::vector<int> &UE_type,std::vector<std::vector<int>> &State_SINR_VLC_index){
+    std::vector<int> next_AP_association;
+    //std::vector<std::vector<int>> all_possible_next_AP_association = std::vector<std::vector<int>>(((UE_num - LA_UE_num)*4) + (LA_UE_num * 6),std::vector<int>(UE_num,-1));
+    std::vector<std::vector<int>> all_possible_next_AP_association;
+
+    for(int i = 0 ;i < UE_num ; i++){
+        std::vector<int> possible_AP_association = std::vector<int>(UE_num,-1);
+        if(UE_type[i] == 1){ //SAP
+            /* !*-*-TODO*-*-! 2023/03/04 : 要想一個方法把所有的AP association都寫出來，(目前最好的方法是格子法)
+            possible_AP_association[i] = -1;
+            all_possible_next_AP_association.push_back(possible_AP_association);*/
+            possible_AP_association[i] = 0;
+            all_possible_next_AP_association.push_back(possible_AP_association);
+            possible_AP_association[i] = State_SINR_VLC_index[i][0];
+            all_possible_next_AP_association.push_back(possible_AP_association);
+            possible_AP_association[i] = State_SINR_VLC_index[i][1];
+            all_possible_next_AP_association.push_back(possible_AP_association);
+        }
+        if(UE_type[i] == 2){ //LA
+
+        }
+    }
+    std::cout << "all_possible_next_AP_association size : "<< all_possible_next_AP_association.size() << "\n";
+    for(int i = 0 ; i < all_possible_next_AP_association.size() ; i++){
+        std::cout << "* - * ";
+        for(int j = 0 ; j < UE_num ; j++){
+            std::cout << all_possible_next_AP_association[i][j] << " \t";
+        }
+        std::cout << " \n";
+    }
+    return next_AP_association;
+}
+
+std::vector<double> createUEDemandVector(std::vector<MyUeNode> &my_UE_list){
+    std::vector<double> demands;
+    for(int i = 0 ; i < my_UE_list.size() ; i++){
+        demands.push_back(my_UE_list[i].getRequiredDataRate());
+    }
+    return demands;
 }
 
 std::vector<int> AP_association_matrix_to_UE_numbers(std::vector<std::vector<int>> &AP_association_matrix){
@@ -399,6 +516,48 @@ std::vector<int> AP_association_matrix_to_UE_numbers(std::vector<std::vector<int
     return AP_serve_UE_numbers;
 }
 
+std::vector<std::vector<int>> AP_association_vector_to_matrix(std::vector<int> &AP_association_vector){
+    std::vector<std::vector<int>> AP_association_matrix = std::vector<std::vector<int>>(RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
+    for(int i = 0 ; i < UE_num ; i++){
+        switch(AP_association_vector[i]){
+            case 0:
+                AP_association_matrix[0][i] += 1;
+                break;
+            case 1:
+                AP_association_matrix[1][i] += 1;
+                break;
+            case 2:
+                AP_association_matrix[2][i] += 1;
+                break;
+            case 3:
+                AP_association_matrix[3][i] += 1;
+                break;
+            case 4:
+                AP_association_matrix[4][i] += 1;
+                break;
+            case 5:
+                AP_association_matrix[0][i] += 1;
+                AP_association_matrix[1][i] += 1;
+                break;
+            case 6:
+                AP_association_matrix[0][i] += 1;
+                AP_association_matrix[2][i] += 1;
+                break;
+            case 7:
+                AP_association_matrix[0][i] += 1;
+                AP_association_matrix[3][i] += 1;
+                break;
+            case 8:
+                AP_association_matrix[0][i] += 1;
+                AP_association_matrix[4][i] += 1;
+                break;
+            default:
+                break;
+        }
+    }
+    return AP_association_matrix;
+}
+
 std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<double> &RF_SINR_vector){
     std::vector<std::vector<double>> combined_SINR_matrix = std::vector<std::vector<double>> (RF_AP_num+VLC_AP_num,std::vector<double>(UE_num,0.0));
     for(int i = 0; i < RF_AP_num + VLC_AP_num ; i++){
@@ -410,7 +569,7 @@ std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<doubl
     return combined_SINR_matrix;
 }
 
-std::vector<std::vector<double>> SINR_matrix_to_AP_index(std::vector<std::vector<double>> &SINR_matrix){
+std::vector<std::vector<double>> SINR_matrix_to_two_high_SINR(std::vector<std::vector<double>> &SINR_matrix){
     std::vector<std::vector<double>> State_SINR = std::vector<std::vector<double>> (UE_num,std::vector<double>(3,0.0));
     for(int i = 0 ; i < UE_num ; i++){
         double highest_AP_value = -DBL_MAX ;
@@ -428,17 +587,45 @@ std::vector<std::vector<double>> SINR_matrix_to_AP_index(std::vector<std::vector
     return State_SINR;
 }
 
+std::vector<std::vector<int>> SINR_matrix_to_two_high_AP_index(std::vector<std::vector<double>> &SINR_matrix){
+    std::vector<std::vector<int>> State_SINR_VLC_index = std::vector<std::vector<int>> (UE_num,std::vector<int>(2,0.0));
+    for(int i = 0 ; i < UE_num ; i++){
+        double highest_AP_value = -DBL_MAX ;
+        double second_AP_value = -DBL_MAX ;
+        int highest_AP_index = 0 ;
+        int second_AP_index = 0;
+        for(int j = 1 ; j < VLC_AP_num + 1 ; j++){
+            if(SINR_matrix[j][i] > highest_AP_value){
+                second_AP_value = highest_AP_value;
+                second_AP_index = highest_AP_index;
+                highest_AP_value = SINR_matrix[j][i];
+                highest_AP_index = j;
+            }
+        }
+        State_SINR_VLC_index[i][0] = (highest_AP_value < 0 )? 0.0 : highest_AP_index;
+        State_SINR_VLC_index[i][1] = (second_AP_value < 0 )? 0.0 : second_AP_index;
+    }
+    return State_SINR_VLC_index;
+}
+
 double calculatedR1(std::vector<int> &UE_type,
                  std::vector<int> &pre_AP_association,
                  std::vector<int> &AP_association,
                  std::vector<std::vector<double>> &VLC_data_rate_matrix,
                  std::vector<double> &RF_data_rate_vector,
-                 std::vector<int> State_AP_load){
+                 std::vector<int> &State_AP_load){
     double total_throughput = 0.0;
     for(int i = 0 ;i < UE_num ; i++){
+
         double throughput = 0.0;
         if(UE_type[i] == 1){ //SAP
             if(AP_association[i] != -1){
+                double data_rate = 0.0;
+                if(AP_association[i] < 5)
+                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
+                else
+                    std::cout << "SAP UE AP association is wrong!\n";
+
                 double eta = 0.0;
                 if(pre_AP_association[i] == AP_association[i]){ // no change AP
                     eta = 1;
@@ -449,11 +636,6 @@ double calculatedR1(std::vector<int> &UE_type,
                 else if(pre_AP_association[i] == 0 && AP_association[i] != 0){ // WiFi to LiFi
                     eta = eta_vho;
                 }
-                double data_rate = 0.0;
-                if(AP_association[i] < 5)
-                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]][i];
-                else
-                    std::cout << "SAP UE AP association is wrong!\n";
                 throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
             }
         }
@@ -470,10 +652,10 @@ double calculatedR1(std::vector<int> &UE_type,
                     eta = eta_vho;
                 }
                 if(AP_association[i] > 4){
-                    throughput = eta * (RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-4][i] * (1.0 / State_AP_load[AP_association[i]-4]));
+                    throughput = eta * ((RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-5][i] * (1.0 / State_AP_load[AP_association[i]-4])));
                 }
                 else{
-                    throughput = eta * (AP_association[i] == 0)? RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : VLC_data_rate_matrix[AP_association[i]][i] * (1.0 / State_AP_load[AP_association[i]]);
+                    throughput = (AP_association[i] == 0)? eta * RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : eta * VLC_data_rate_matrix[AP_association[i]-1][i] * (1.0 / State_AP_load[AP_association[i]]);
                 }
             }
         }
@@ -487,10 +669,11 @@ double calculatedR2(std::vector<int> &UE_type,
                  std::vector<int> &AP_association,
                  std::vector<std::vector<double>> &VLC_data_rate_matrix,
                  std::vector<double> &RF_data_rate_vector,
-                 std::vector<int> State_AP_load){
-    double total_throughput = 0.0;
+                 std::vector<int> &State_AP_load,
+                 std::vector<double> &UEdemands){
+    double total_us = 0.0;
     for(int i = 0 ;i < UE_num ; i++){
-        double throughput = 0.0;
+        double us = 0.0;
         if(UE_type[i] == 1){ //SAP
             if(AP_association[i] != -1){
                 double eta = 0.0;
@@ -504,11 +687,12 @@ double calculatedR2(std::vector<int> &UE_type,
                     eta = eta_vho;
                 }
                 double data_rate = 0.0;
-                if(AP_association[i] < 5)
-                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]][i];
+                if(AP_association[i] < 5 )
+                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
                 else
                     std::cout << "SAP UE AP association is wrong!\n";
-                throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
+                double throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
+                us = throughput / UEdemands[i];
             }
         }
         else if(UE_type[i] == 2){ //LA
@@ -523,17 +707,75 @@ double calculatedR2(std::vector<int> &UE_type,
                 else{
                     eta = eta_vho;
                 }
-                if(AP_association[i] > 4){
-                    throughput = eta * (RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-4][i] * (1.0 / State_AP_load[AP_association[i]-4]));
-                }
-                else{
-                    throughput = eta * (AP_association[i] == 0)? RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : VLC_data_rate_matrix[AP_association[i]][i] * (1.0 / State_AP_load[AP_association[i]]);
-                }
+                double throughput = 0.0;
+                if(AP_association[i] > 4)
+                    throughput = eta * ((RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-5][i] * (1.0 / State_AP_load[AP_association[i]-4])));
+                else
+                    throughput = (AP_association[i] == 0)? eta * RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : eta * VLC_data_rate_matrix[AP_association[i]-1][i] * (1.0 / State_AP_load[AP_association[i]]);
+                us = throughput / UEdemands[i];
             }
         }
-        total_throughput += throughput;
+        total_us += us * C_one;
     }
-    return total_throughput / UE_num;
+    return total_us / UE_num;
+}
+
+double calculatedR3(std::vector<int> &UE_type,
+                 std::vector<int> &pre_AP_association,
+                 std::vector<int> &AP_association,
+                 std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                 std::vector<double> &RF_data_rate_vector,
+                 std::vector<int> &State_AP_load,
+                 std::vector<double> &UEdemands){
+    double total_q = 0.0;
+    for(int i = 0 ;i < UE_num ; i++){
+        double q = 0.0;
+        if(UE_type[i] == 1){ //SAP
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] != 0 && AP_association[i] != 0){ // LiFi to LiFi
+                    eta = eta_hho;
+                }
+                else if(pre_AP_association[i] == 0 && AP_association[i] != 0){ // WiFi to LiFi
+                    eta = eta_vho;
+                }
+                double data_rate = 0.0;
+                if(AP_association[i] < 5)
+                    data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
+                else
+                    std::cout << "SAP UE AP association is wrong!\n";
+                double throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
+                double us = throughput / UEdemands[i];
+                q = (us <= 0.5)? (-C_two * (1 - us)) : C_one * us;
+            }
+        }
+        else if(UE_type[i] == 2){ //LA
+            if(AP_association[i] != -1){
+                double eta = 0.0;
+                if(pre_AP_association[i] == AP_association[i]){ // no change AP
+                    eta = 1;
+                }
+                else if(pre_AP_association[i] > 4 && AP_association[i] > 4){ // WiFi same , LiFi change
+                    eta = eta_hho;
+                }
+                else{
+                    eta = eta_vho;
+                }
+                double throughput = 0.0;
+                if(AP_association[i] > 4)
+                    throughput = eta * ((RF_data_rate_vector[i] * (1.0 / State_AP_load[0])) + (VLC_data_rate_matrix[AP_association[i]-5][i] * (1.0 / State_AP_load[AP_association[i]-4])));
+                else
+                    throughput = eta * (AP_association[i] == 0)? RF_data_rate_vector[i] * (1.0 / State_AP_load[0]) : VLC_data_rate_matrix[AP_association[i]-1][i] * (1.0 / State_AP_load[AP_association[i]]);
+                double us = throughput / UEdemands[i];
+                q = (us <= 0.5)? (-C_two * (1 - us)) : C_one * us;
+            }
+        }
+        total_q += q;
+    }
+    return total_q / UE_num;
 }
 
 void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
@@ -551,6 +793,7 @@ void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociati
 }
 
 void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list){
+
     for (int i = 0; i < my_UE_list.size(); i++) {
         double curr_throughput = throughtput_per_iteration[i].back();
         double curr_satisfaction = std::min(curr_throughput / my_UE_list[i].getRequiredDataRate(), 1.0);
