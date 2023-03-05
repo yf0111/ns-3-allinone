@@ -211,9 +211,10 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
 #if PROPOSED_METHOD
 
-    proposedDynamicLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes, VLC_LOS_matrix, VLC_SINR_matrix, RF_data_rate_vector,
-                      VLC_data_rate_matrix, AP_association_matrix, RU_matrix_per_VLC_AP,
-                      discount_ratio_per_AP, first_empty_RU_position, my_UE_list);
+    proposedStaticLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
+                       VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
+                       RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector);
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,

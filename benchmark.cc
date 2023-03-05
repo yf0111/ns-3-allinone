@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <float.h>
 #include <map>
+#include <set>
+#include <cstdlib>
+#include <ctime>
+
 
 #include "print.h"
 #include "channel.h"
@@ -22,6 +26,7 @@
 
     bit/s/Hz = 1 Mbit/s/MHz
 */
+
 static const std::map<double, double, std::greater<double>> SINR_to_spectral_efficiency = { {0.0, 0}, {2.0, 0.5}, {4.0, 0.75}, {5.0, 1.0},
                                                                                              {9.0, 1.5}, {11.0, 2.0}, {15.0, 3.0}, {18.0, 4.0},
                                                                                              {20.0,5.0}};
@@ -398,7 +403,7 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
     std::vector<int> init_AP_association = std::vector<int>(UE_num,-1);
     local_AP_association_matrix = AP_association_vector_to_matrix(init_AP_association);
 
-    /*  Reward
+    /*  Reward (might change)
          [0] std::vector<int> init AP association's R1
          [1] std::vector<int> next AP association's R1
          [2] std::vector<int> next AP association
@@ -407,10 +412,9 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
          ...
          [64] std::vector<int> next AP association
     */
-    std::vector<double> Reward_one;
 
 
-    /*  Q
+    /*  Q (might change)
          [0] std::vector<int> init AP association
          [1] std::vector<int> next possible AP association
          [2] std::vector<int> next possible AP association
@@ -419,79 +423,115 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
          ...
          [64] std::vector<int> next possible AP association
     */
-    std::vector<std::vector<int>> Q;
 
 
     int episodes = 0;
+    std::vector<std::vector<int>> all_possible_AP_association = generate_next_possible_AP_association(SINR_matrix,UE_type,State_SINR_VLC_index); // should do only once(?) , represent all possible action
+    std::vector<double> policy_parameter = std::vector<double>(all_possible_AP_association.size(),1.0/all_possible_AP_association.size()); // add up need to be 1 , each entry is the probability of action
+    //TODO
     while (episodes++ < total_episodes){
 
-        // random choose a init action
-        std::vector<int> now_AP_association = std::vector<int>(UE_num,-1);
-        for(int i = 0 ; i < UE_num ; i++){
-            if(UE_type[i] == 1){ // SAP
-                now_AP_association[i] = rand()%6;
-                if(now_AP_association[i] == 5) now_AP_association[i] = -1;
-            }
-            if(UE_type[i] == 2){ // LA
-                now_AP_association[i] = rand()%10;
-                if(now_AP_association[i] == 9) now_AP_association[i] = -1;
-            }
-        }
-        local_AP_association_matrix = AP_association_vector_to_matrix(now_AP_association);
-        std::vector<int> State_AP_load = AP_association_matrix_to_UE_numbers (local_AP_association_matrix);
-
-        Q.push_back(now_AP_association);
-        Reward_one.push_back(calculatedR1(UE_type,init_AP_association,now_AP_association,VLC_data_rate_matrix,RF_data_rate_vector,State_AP_load));
-
         // random choose a next action
-        std::vector<int> next_AP_association = choose_next_AP_association(SINR_matrix,UE_type,State_SINR_VLC_index);
-        /*for(int i = 0 ; i < UE_num ; i++){
-            if(UE_type[i] == 1){ // SAP
-                next_AP_association[i] = rand()%6;
-                if(next_AP_association[i] == 5) next_AP_association[i] = -1;
-            }
-            if(UE_type[i] == 2){ // LA
-                next_AP_association[i] = rand()%10;
-                if(next_AP_association[i] == 9) next_AP_association[i] = -1;
-            }
-        }
-        Q.push_back(next_AP_association);*/
+        int random_number = rand()%all_possible_AP_association.size();
+        std::vector<int> next_AP_association = all_possible_AP_association[random_number];
 
+        local_AP_association_matrix = AP_association_vector_to_matrix(next_AP_association);
+        std::vector<int> State_AP_load = AP_association_matrix_to_UE_numbers (local_AP_association_matrix);
+        printApAssociationMatrix(local_AP_association_matrix);
+
+        /*Q.push_back(next_AP_association);
+        Reward_one.push_back(calculatedR1(UE_type,init_AP_association,next_AP_association,VLC_data_rate_matrix,RF_data_rate_vector,State_AP_load));*/
 
 
     }
 }
-std::vector<int> choose_next_AP_association(std::vector<std::vector<double>> &SINR_matrix,std::vector<int> &UE_type,std::vector<std::vector<int>> &State_SINR_VLC_index){
-    std::vector<int> next_AP_association;
-    //std::vector<std::vector<int>> all_possible_next_AP_association = std::vector<std::vector<int>>(((UE_num - LA_UE_num)*4) + (LA_UE_num * 6),std::vector<int>(UE_num,-1));
+
+std::vector<std::vector<int>> generate_next_possible_AP_association(std::vector<std::vector<double>> &SINR_matrix,std::vector<int> &UE_type,std::vector<std::vector<int>> &State_SINR_VLC_index){ // should do only once(?)
     std::vector<std::vector<int>> all_possible_next_AP_association;
-
-    for(int i = 0 ;i < UE_num ; i++){
-        std::vector<int> possible_AP_association = std::vector<int>(UE_num,-1);
-        if(UE_type[i] == 1){ //SAP
-            /* !*-*-TODO*-*-! 2023/03/04 : 要想一個方法把所有的AP association都寫出來，(目前最好的方法是格子法)
-            possible_AP_association[i] = -1;
-            all_possible_next_AP_association.push_back(possible_AP_association);*/
-            possible_AP_association[i] = 0;
-            all_possible_next_AP_association.push_back(possible_AP_association);
-            possible_AP_association[i] = State_SINR_VLC_index[i][0];
-            all_possible_next_AP_association.push_back(possible_AP_association);
-            possible_AP_association[i] = State_SINR_VLC_index[i][1];
-            all_possible_next_AP_association.push_back(possible_AP_association);
+    std::vector<std::vector<int>> store_each_UE_possible_AP;
+    for(int i = 0 ; i < UE_num ; i++){
+        if(UE_type[i] == 1){ // SAP
+            std::vector<int> v;
+            v.push_back(-1); // no connected
+            v.push_back(0); // wifi
+            if(State_SINR_VLC_index[i][0] != -5)
+                v.push_back(State_SINR_VLC_index[i][0]); // highest SINR VLC
+            if(State_SINR_VLC_index[i][1] != -5)
+                v.push_back(State_SINR_VLC_index[i][1]); // second SINR VLC
+            store_each_UE_possible_AP.push_back(v);
         }
-        if(UE_type[i] == 2){ //LA
-
+        if(UE_type[i] == 2){ // LA
+            std::vector<int> v;
+            v.push_back(-1); // no connected
+            v.push_back(0); // only wifi
+            if(State_SINR_VLC_index[i][0] != -5){
+                v.push_back(State_SINR_VLC_index[i][0]); // highest SINR VLC
+                v.push_back(State_SINR_VLC_index[i][0]+4); // wifi + highest SINR VLC
+            }
+            if(State_SINR_VLC_index[i][1] != -5){
+                v.push_back(State_SINR_VLC_index[i][1]); // second SINR VLC
+                v.push_back(State_SINR_VLC_index[i][1]+4); // wifi + highest SINR VLC
+            }
+            store_each_UE_possible_AP.push_back(v);
         }
     }
-    std::cout << "all_possible_next_AP_association size : "<< all_possible_next_AP_association.size() << "\n";
-    for(int i = 0 ; i < all_possible_next_AP_association.size() ; i++){
-        std::cout << "* - * ";
-        for(int j = 0 ; j < UE_num ; j++){
-            std::cout << all_possible_next_AP_association[i][j] << " \t";
+
+    /*for (int i = 0; i < store_each_UE_possible_AP.size(); i++) {
+
+        for (auto x : store_each_UE_possible_AP[i])
+            std::cout << x << " ";
+        std::cout << std::endl;
+    }*/
+
+    std::vector<int> possible_AP_association = std::vector<int>(UE_num,-1);
+    for(int i = 0 ;i < store_each_UE_possible_AP[0].size() ; i++){
+        possible_AP_association[0] = store_each_UE_possible_AP[0][i];
+        all_possible_next_AP_association.push_back(possible_AP_association);
+        for(int j = 0 ; j < store_each_UE_possible_AP[1].size() ; j++){
+            possible_AP_association[1] = store_each_UE_possible_AP[1][j];
+            all_possible_next_AP_association.push_back(possible_AP_association);
+            for(int o = 0 ; o < store_each_UE_possible_AP[2].size() ; o++){
+                possible_AP_association[2] = store_each_UE_possible_AP[2][o];
+                all_possible_next_AP_association.push_back(possible_AP_association);
+                for(int l = 0 ; l < store_each_UE_possible_AP[3].size() ; l++){
+                    possible_AP_association[3] = store_each_UE_possible_AP[3][l];
+                    all_possible_next_AP_association.push_back(possible_AP_association);
+                    for(int k = 0 ; k < store_each_UE_possible_AP[4].size() ; k++){
+                        possible_AP_association[4] = store_each_UE_possible_AP[4][k];
+                        all_possible_next_AP_association.push_back(possible_AP_association);
+                        for(int m = 0 ; m < store_each_UE_possible_AP[5].size() ; m++){
+                            possible_AP_association[5] = store_each_UE_possible_AP[5][m];
+                            all_possible_next_AP_association.push_back(possible_AP_association);
+                            for(int n = 0 ; n < store_each_UE_possible_AP[6].size() ; n++){
+                                possible_AP_association[6] = store_each_UE_possible_AP[6][n];
+                                all_possible_next_AP_association.push_back(possible_AP_association);
+                                for(int h = 0 ; h < store_each_UE_possible_AP[7].size() ; h++){
+                                    possible_AP_association[7] = store_each_UE_possible_AP[7][h];
+                                    all_possible_next_AP_association.push_back(possible_AP_association);
+                                    for(int g = 0 ; g < store_each_UE_possible_AP[8].size() ; g++){
+                                        possible_AP_association[8] = store_each_UE_possible_AP[8][g];
+                                        all_possible_next_AP_association.push_back(possible_AP_association);
+                                        for(int f = 0 ; f < store_each_UE_possible_AP[9].size() ; f++){
+                                            possible_AP_association[9] = store_each_UE_possible_AP[9][f];
+                                            all_possible_next_AP_association.push_back(possible_AP_association);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        std::cout << " \n";
     }
-    return next_AP_association;
+
+    //std::cout << "all_possible_next_AP_association size : "<< all_possible_next_AP_association.size() << "\n";
+    std::sort(all_possible_next_AP_association.begin(), all_possible_next_AP_association.end());
+    auto last = std::unique(all_possible_next_AP_association.begin(), all_possible_next_AP_association.end());
+    all_possible_next_AP_association.erase(last, all_possible_next_AP_association.end());
+
+    //std::cout << "all_possible_next_AP_association size : "<< all_possible_next_AP_association.size() << "\n";
+    return all_possible_next_AP_association;
 }
 
 std::vector<double> createUEDemandVector(std::vector<MyUeNode> &my_UE_list){
@@ -588,12 +628,12 @@ std::vector<std::vector<double>> SINR_matrix_to_two_high_SINR(std::vector<std::v
 }
 
 std::vector<std::vector<int>> SINR_matrix_to_two_high_AP_index(std::vector<std::vector<double>> &SINR_matrix){
-    std::vector<std::vector<int>> State_SINR_VLC_index = std::vector<std::vector<int>> (UE_num,std::vector<int>(2,0.0));
+    std::vector<std::vector<int>> State_SINR_VLC_index = std::vector<std::vector<int>> (UE_num,std::vector<int>(2,0));
     for(int i = 0 ; i < UE_num ; i++){
         double highest_AP_value = -DBL_MAX ;
         double second_AP_value = -DBL_MAX ;
-        int highest_AP_index = 0 ;
-        int second_AP_index = 0;
+        int highest_AP_index = -INT_MAX ;
+        int second_AP_index = -INT_MAX;
         for(int j = 1 ; j < VLC_AP_num + 1 ; j++){
             if(SINR_matrix[j][i] > highest_AP_value){
                 second_AP_value = highest_AP_value;
@@ -602,8 +642,9 @@ std::vector<std::vector<int>> SINR_matrix_to_two_high_AP_index(std::vector<std::
                 highest_AP_index = j;
             }
         }
-        State_SINR_VLC_index[i][0] = (highest_AP_value < 0 )? 0.0 : highest_AP_index;
-        State_SINR_VLC_index[i][1] = (second_AP_value < 0 )? 0.0 : second_AP_index;
+        //std::cout << "high :" << highest_AP_value << "\t second : " << second_AP_value <<"\n";
+        State_SINR_VLC_index[i][0] = (highest_AP_value == -DBL_MAX)? -5 : highest_AP_index; // if State_SINR_VLC_index[i][0] = -5 means that there is no highest SINR VLC AP
+        State_SINR_VLC_index[i][1] = (second_AP_value == 0 || second_AP_value == -DBL_MAX)? -5 : second_AP_index; // if State_SINR_VLC_index[i][1] = -5 means that there is no second SINR VLC AP
     }
     return State_SINR_VLC_index;
 }
@@ -624,7 +665,7 @@ double calculatedR1(std::vector<int> &UE_type,
                 if(AP_association[i] < 5)
                     data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
                 else
-                    std::cout << "SAP UE AP association is wrong!\n";
+                    std::cout<<"**(benchmark.cc) SAP UE AP association is wrong**\n";
 
                 double eta = 0.0;
                 if(pre_AP_association[i] == AP_association[i]){ // no change AP
@@ -690,7 +731,7 @@ double calculatedR2(std::vector<int> &UE_type,
                 if(AP_association[i] < 5 )
                     data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
                 else
-                    std::cout << "SAP UE AP association is wrong!\n";
+                    std::cout<<"**(benchmark.cc) SAP UE AP association is wrong**\n";
                 double throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
                 us = throughput / UEdemands[i];
             }
@@ -746,7 +787,7 @@ double calculatedR3(std::vector<int> &UE_type,
                 if(AP_association[i] < 5)
                     data_rate = (AP_association[i] == 0)? RF_data_rate_vector[i] : VLC_data_rate_matrix[AP_association[i]-1][i];
                 else
-                    std::cout << "SAP UE AP association is wrong!\n";
+                    std::cout<<"**(benchmark.cc) SAP UE AP association is wrong**\n";
                 double throughput = eta * data_rate * (1.0 / State_AP_load[AP_association[i]]);
                 double us = throughput / UEdemands[i];
                 q = (us <= 0.5)? (-C_two * (1 - us)) : C_one * us;

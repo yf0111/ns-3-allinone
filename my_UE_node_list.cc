@@ -28,8 +28,11 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
         else if ((LASINR || LAEQOS) && !RLLB){
             required_data_rate = require_data_rate_threshold;
         }
+        else if( PROPOSED_METHOD ){
+            required_data_rate = require_data_rate_threshold;
+        }
         else{
-            std::cout<<"**global configuration about method is WRONG!**\n";
+            std::cout<<"** (my_UE_node_list.cc) global configuration about method is WRONG!**\n";
         }
         //* double required_data_rate = uniform(generator);
 

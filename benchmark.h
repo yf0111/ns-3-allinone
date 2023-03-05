@@ -42,7 +42,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
 
 double getSpectralEfficiency(double SINR);
 
-std::vector<int> choose_next_AP_association(std::vector<std::vector<double>> &SINR_matrix,std::vector<int> &UE_type,std::vector<std::vector<int>> &State_SINR_VLC_index);
+std::vector<std::vector<int>> generate_next_possible_AP_association(std::vector<std::vector<double>> &SINR_matrix,std::vector<int> &UE_type,std::vector<std::vector<int>> &State_SINR_VLC_index);
 
 std::vector<std::vector<double>> combineSINRmatrix(std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<double> &RF_SINR_vector);
 

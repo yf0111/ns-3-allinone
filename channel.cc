@@ -150,7 +150,7 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int V
     }
     double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
     double SINR = std::pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
-    /*  change to logarithmic SINR : is because A^2 need to convert to dBm ? */
+    /* change to logarithmic SINR : is because A^2 need to convert to dBm ? */
     return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
 }
 
@@ -158,22 +158,27 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int V
 
 /*  VLC data rate  */
 void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, std::vector<std::vector<double>> &VLC_data_rate_matrix) {
-    if(RLLB && !LASINR && !LAEQOS){
-        for(int i = 0 ; i < VLC_AP_num ; i++){
-            for(int j = 0 ; j < UE_num ; j++){
-                VLC_data_rate_matrix[i][j] = estimateOneVlcDataRate(VLC_SINR_matrix,i,j);
-            }
+    for(int i = 0 ; i < VLC_AP_num ; i++){
+        for(int j = 0 ; j < UE_num ; j++){
+            VLC_data_rate_matrix[i][j] = estimateOneVlcDataRate(VLC_SINR_matrix,i,j);
         }
-    }
-    else if ((LASINR || LAEQOS) && !RLLB){
-    }
-    else{
-        std::cout<<"**global configuration about method is WRONG!**\n";
     }
 }
 double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, int VLC_AP_index , int UE_index){
-    double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (6.0 / PI * EE) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
-    return std::isnan(data_rate)? 0.0 : data_rate;
+    if(RLLB && !LASINR && !LAEQOS || PROPOSED_METHOD){
+        double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (6.0 / PI * EE) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
+        return std::isnan(data_rate)? 0.0 : data_rate;
+    }
+    else if ((LASINR || LAEQOS) && !RLLB){
+        return 0.0;
+    }
+    else if (PROPOSED_METHOD){
+        return 0.0;
+    }
+    else{
+        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
+        return 0.0;
+    }
 }
 
 
@@ -252,8 +257,11 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         double rf_los_channel_gain = std::pow(H,2) * std::pow(10,((-1)*L_d)/10.0);
         return rf_los_channel_gain;
     }
+    else if (PROPOSED_METHOD){
+        return 0.0;
+    }
     else{
-        std::cout<<"**global configuration about method is WRONG!**\n";
+        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
         return 0.0;
     }
 }
@@ -279,8 +287,11 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_inde
         double SINR = numerator / denominator;
         return SINR;
     }
+    else if (PROPOSED_METHOD){
+        return 0.0;
+    }
     else{
-        std::cout<<"**global configuration about method is WRONG!**\n";
+        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
         return 0.0;
     }
 
@@ -290,22 +301,26 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_inde
 
 /*  RF data rate  */
 double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index){
-    double data_rate = RF_AP_bandwidth * log2(1 + RF_SINR_vector[UE_index]);
-    return std::isnan(data_rate)? 0.0 : data_rate;
-}
-void calculateALLRFDataRate(std::vector<double> &RF_data_rate_vector,std::vector<double> &RF_SINR_vector){
     if(RLLB && !LASINR && !LAEQOS){
-        for(int j = 0 ; j < UE_num ; j++){
-            RF_data_rate_vector[j] = estimateOneRFDataRate(RF_SINR_vector,j);
-        }
+        double data_rate = RF_AP_bandwidth * log2(1 + RF_SINR_vector[UE_index]);
+        return std::isnan(data_rate)? 0.0 : data_rate;
     }
     else if ((LASINR || LAEQOS) && !RLLB){
+        return 0.0;
+    }
+    else if (PROPOSED_METHOD){
+        return 0.0;
     }
     else{
-        std::cout<<"**global configuration about method is WRONG!**\n";
+        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
+        return 0.0;
     }
 }
-
+void calculateALLRFDataRate(std::vector<double> &RF_data_rate_vector,std::vector<double> &RF_SINR_vector){
+    for(int j = 0 ; j < UE_num ; j++){
+        RF_data_rate_vector[j] = estimateOneRFDataRate(RF_SINR_vector,j);
+    }
+}
 
 void precalculation(NodeContainer  &RF_AP_node,
                       NodeContainer  &VLC_AP_nodes,

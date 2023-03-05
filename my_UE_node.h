@@ -11,11 +11,6 @@
 
 using namespace ns3;
 
-//* typedef std::pair<std::pair<int,int>, std::pair<int,int>> RuRangeType;
-// typedef std::pair<int,int> RuType; // <sub channel index , time>
-
-//* enum Order {high_to_low, low_to_high}; //?
-
 class MyUeNode
 {
 
@@ -48,23 +43,6 @@ public:
     double getPolarAngle(void);
     double getAzimuthAngle(void);
     void randomOrientationAngle(Ptr<Node> UE);
-
-    /*
-        2023/01/09 : NEED CHANGE !
-    */
-    /*
-    void recordResourceUnit(std::pair<int,int> newRu);
-    //* void updateNthResourceUnitBlock(int n, RuRangeType new_RU);
-    void updateNthResourceUnitBlock(int n,RuType new_Ru);
-    //* RuRangeType getNthResourceUnitBlock(int n);
-    RuType getNthResourceUnitBlock(int n);
-    void removeNthResourceUnitBlock(int n);
-    void removeLastResourceUnitBlock(void);
-    int getRuBlockSize(void);
-    void clearRuBlock(void);
-    std::vector<RuRangeType> getWholeRuBlock(void);
-    //* void arrangeRuBlock(Order order);
-    */
 
 private:
     int node_ID;
