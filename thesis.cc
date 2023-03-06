@@ -96,6 +96,7 @@ std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
 */
 std::vector<double> recorded_average_outage_probability(state_num,0.0); // UE average outage probability
 std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average data rate
+std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction
 
 /*
     !*-*-NEW*-*-!
@@ -107,6 +108,8 @@ std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
     !*-*-NEW*-*-!
     ref'1 : for reference 1
 */
+std::multimap<std::vector<double>,int> policy_map; // ((SAP/LA , x position , y position) , AP association)
+std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
 
 /*std::vector<Action_type> action_vec(state_num);
 std::vector<Env_state_type> env_state_vec(state_num);
@@ -176,10 +179,14 @@ static void initialize() {
     //RF_allocated_power_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.25 / RF_AP_num / RF_AP_subchannel)); //W
     //RF_ICI_channel_gain_vector = std::vector<double>(UE_num,0.0);
 
+    policy_map.clear();
+
     UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
+    UE_final_satisfaction_vector = std::vector<double>(UE_num,0.0);
 
     recorded_average_outage_probability = std::vector<double>(state_num,0.0);
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
+    recorded_average_satisfaction = std::vector<double>(state_num,0.0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -220,13 +227,14 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
+                        policy_map,UE_final_satisfaction_vector);
 #endif
 
 
     /* CALCULATION OF PERFORMANCE METRICS */
 
-    // step 1. calculate UE average outage probability
+    // UE average outage probability
     int outage_UE_number = 0;
     for(int i = 0 ; i < UE_num ; i++){
         if(UE_final_data_rate_vector[i] < require_data_rate_threshold){
@@ -235,15 +243,24 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     }
     recorded_average_outage_probability[state] = (double) outage_UE_number / UE_num;
 
-    // step 2. calculate UE average data rate
+    // UE average data rate
     double total_UE_data_rate = 0;
     for(int i = 0 ; i < UE_num ; i++){
         total_UE_data_rate += UE_final_data_rate_vector[i];
     }
     recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
 
-    std::cout << "avg outage probability: "<<recorded_average_outage_probability[state] << std::endl<<std::endl;
+    // UE average satisfaction
+    double total_UE_satis = 0;
+    for(int i = 0 ; i < UE_num ; i++){
+        total_UE_satis += UE_final_satisfaction_vector[i];
+    }
+    recorded_average_satisfaction[state] = (double) total_UE_satis / UE_num;
+
+    std::cout << "avg outage: "<<recorded_average_outage_probability[state] << std::endl;
     std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
+    std::cout << "avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl<<std::endl;
+
 
 
     // use another storage to keep UE's information

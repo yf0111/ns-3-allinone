@@ -19,14 +19,19 @@ void benchmarkMethod(int &state,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
-                     std::vector<double> &UE_final_data_rate_vector);
+                     std::vector<double> &UE_final_data_rate_vector,
+                     std::multimap<std::vector<double>,int> &policy_map,
+                     std::vector<double> &UE_final_satisfaction_vector);
 
 void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
            std::vector<double> &RF_SINR_vector,
            std::vector<std::vector<double>> &VLC_SINR_matrix,
            std::vector<MyUeNode> &my_UE_list,
            std::vector<std::vector<double>> &VLC_data_rate_matrix,
-           std::vector<double> &RF_data_rate_vector);
+           std::vector<double> &RF_data_rate_vector,
+           std::multimap<std::vector<double>,int> &policy_map,
+           std::vector<double> &UE_final_data_rate_vector,
+           std::vector<double> &UE_final_satisfaction_vector);
 
 void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,

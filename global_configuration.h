@@ -23,7 +23,7 @@ const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m // @-ref'1- 5@ , @-ref'2- 5@
 const double time_period = 0.5; // sec //
-const int state_num = 1; // @-ref'1- ?@ , @-ref'2- 1@
+const int state_num = 100; // @-ref'1- 100@ , @-ref'2- 1@
 
 
 /*  RF AP  */

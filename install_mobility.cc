@@ -49,21 +49,6 @@ void installRfApMobility(NodeContainer &RF_AP_node) {
 
 
 /*
-    //1//
-    install the mobility of VLC AP  : 6x6
-
-                         ^
-        *(30) *(31) *(32)| *(33) *(34) *(35)
-        *(24) *(25) *(26)| *(27) *(28) *(29)
-        *(18) *(19) *(20)| *(21) *(22) *(23)
-     ------------------------------------>
-        *(12) *(13) *(14)| *(15) *(16) *(17)
-        *(6)  *(7)  *(8) | *(9)  *(10) *(11)
-        *(0)  *(1)  *(2) | *(3)  *(4)  *(5)
-
-*/
-/*
-    //2//
     install the mobility of VLC AP  : 2x2
 
                 ^
@@ -77,7 +62,7 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     MobilityHelper VLC_AP_mobility;
     Ptr<ListPositionAllocator> VLC_AP_pos_list = CreateObject<ListPositionAllocator>();
 
-    double delta = room_size / VLC_AP_per_row; // 24/6 , 5/2
+    double delta = room_size / VLC_AP_per_row; // 5/2
     for (int i = 0; i < VLC_AP_num; i++) {
         double x = (i%VLC_AP_per_row + 1) * delta;
         double y = (i/VLC_AP_per_row + 1) * delta;
@@ -100,7 +85,6 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
 
 /*
     install the mobility of UE - orientation-based RWP
-    2023/01/09 : benchmark does not mention about device orientation , and UE no need to move
 
 */
 void installUeMobility(NodeContainer &UE_nodes) {
@@ -124,24 +108,27 @@ void installUeMobility(NodeContainer &UE_nodes) {
 
 
 
+    if(RLLB){
+        /* RWP */
+        // - the random variable for user speed
+        std::stringstream ss_speed;
+        ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
 
-    /* RWP */
+        // - the random variable for pause time
+        std::stringstream ss_pause;
+        ss_pause << "ns3::UniformRandomVariable[Min=0.0|Max=" << pause_time << "]";
 
-/*    // set mobility model
-    // - the random variable for user speed
-    std::stringstream ss_speed;
-    ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
-
-    // - the random variable for pause time
-    std::stringstream ss_pause;
-    ss_pause << "ns3::UniformRandomVariable[Min=0.0|Max=" << pause_time << "]";
-
-    UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
+        UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
                                   "Speed", StringValue(ss_speed.str()),
                                   "Pause", StringValue(ss_pause.str()),
-                                  "PositionAllocator", PointerValue(position_allocator));*/
+                                  "PositionAllocator", PointerValue(position_allocator));
 
-    UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel"); // static environment
+    }
+    else{
+        /* static environment */
+        UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    }
+
     UE_mobility.Install(UE_nodes);
 }
 
