@@ -109,7 +109,8 @@ void installUeMobility(NodeContainer &UE_nodes) {
 
 
     if(RLLB){
-        /* RWP */
+        /* dynamic environment */
+
         // - the random variable for user speed
         std::stringstream ss_speed;
         ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";

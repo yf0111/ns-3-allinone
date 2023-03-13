@@ -18,7 +18,7 @@
 
 static const double lambertian_coefficient = (-1) / (log2(cos(degree2Radian(PHI_half)))); // m
 static const double concentrator_gain = pow(refractive_index, 2) / pow(sin(degree2Radian(field_of_view / 2)), 2);
-double X = 0.0 , H = 0.0 ,p; // ref'1 , ref'2  about RF channel
+double X = 0.0 ,H = 0.0,p , X1 = 0.0; // ref'1 , ref'2  about RF channel
 
 /*  VLC LOS  */
 double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &UE_nodes,std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &VLC_LOS_matrix) {
@@ -52,9 +52,10 @@ double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_n
     return line_of_sight;
 }
 double estimateOneVlcNonLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node){
-    // Reinforcement Learning Based Load Balancing for Hybrid LiFi WiFi Networks reference[25] [Access Point Selection for Hybrid Li-Fi and Wi-Fi Networks] (ref'2 ref)
     //double non_line_of_sight = reflection_coe * receiver_area *
     return 0.0;
+    // !!!!!!!!! A_PD is cm^2
+    // !!!!!!!!! A_room must be cm^2 -> 1e4 cm^2
 }
 
 // cosψ = 1/d((x_a-x_u)sinθcosω+(y_a-y_u)sinθsinω+(z_a-z_u)cosθ) based on (3)
@@ -220,45 +221,51 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         */
         std::normal_distribution<double> Gaussian_before(0.0,3);  // Xσ (before)
         std::normal_distribution<double> Gaussian_after(0.0,5); // Xσ (after)
+        std::normal_distribution<double> Gaussian(0,1); // X1
         std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
-        /*
-            !*-*-NOTICE*-*-! 2023/02/07 : rayleigh(σ) ,
-            σ will affect RF SINR
-            https://www.boost.org/doc/libs/1_37_0/libs/math/doc/sf_and_dist/html/math_toolkit/dist/dist_ref/dists/rayleigh.html
-                             2023/02/09 : 0.29
-        */
-        boost::math::rayleigh_distribution<double> rayleigh(0.29);
-        std::uniform_real_distribution<double> random_p(0.0, 1.0);
-        if(distance <= breakpoint_distance){
-            for(int i = 0; i<100000 ; i++){
-                X += Gaussian_before(gen);
-                p = random_p(gen);
-                H += quantile(rayleigh,p);
-            }
-        }
-        if(distance > breakpoint_distance){
-            for(int i = 0; i<100000 ; i++){
-                X += Gaussian_after(gen);
-                p = random_p(gen);
-                H += quantile(rayleigh,p);
-            }
+
+        int i = 0;
+        while(i < 100000){
+            X1 += Gaussian(gen);
+            X += (distance > breakpoint_distance)? Gaussian_after(gen) : Gaussian_before(gen);
+            i++ ;
         }
         X /= 100000.0;
-        H /= 100000.0;
 
-        double L_d;
+        double L_d = (distance > breakpoint_distance)? 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10(distance / breakpoint_distance) + X : 20 * log10(distance * RF_carrier_frequency) - 147.5 + X;
 
+        double angle_phi_rad = getIrradianceAngle(RF_AP,UE_node);
+        double angle_phi_deg = radian2Degree(angle_phi_rad);
+        std::complex<double> H_comp;
         if(distance <= breakpoint_distance){
-            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + X;
+            H_comp.real(sqrt(1.0/2) * (cos(angle_phi_deg) + X1));
+            H_comp.imag(sqrt(1.0/2) * sin(angle_phi_deg));
         }
-        else{
-            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10((double)distance / breakpoint_distance) + X;
-        }
-        double rf_los_channel_gain = std::pow(H,2) * std::pow(10,((-1)*L_d)/10.0);
+
+        double rf_los_channel_gain = std::norm(H_comp) * std::pow(10,((-1)*L_d)/10.0);
         return rf_los_channel_gain;
     }
     else if (PROPOSED_METHOD){
-        return 0.0;
+        double distance = getDistance(RF_AP,UE_node);
+        std::normal_distribution<double> Gaussian (0.0,10);    //normal distribution 即 Gaussian distribution
+        boost::math::rayleigh_distribution<double> rayleigh(0.8); // standard rayleigh distribution
+        std::uniform_real_distribution<double> random_p(0.0, 1.0);// uniform random variable between 0.0 and 1.0 for inverse transform sampling
+        std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
+        for(int i=0;i<100000;i++)
+        {
+            X+= Gaussian(gen);
+            p = random_p(gen);
+            H+= quantile(rayleigh,p);
+        }
+        X/=100000.0;
+        H/=100000.0;
+        double L_d;
+        if(distance <= breakpoint_distance)
+            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5;
+        else
+            L_d = 20 * log10(RF_carrier_frequency * std::pow(distance,2.75) / std::pow(breakpoint_distance,1.75)) - 147.5;
+        double rf_los_channel_gain = std::pow(H,2) * std::pow(10,((-1)*L_d)/10.0);
+        return rf_los_channel_gain;
     }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
@@ -288,7 +295,10 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_inde
         return SINR;
     }
     else if (PROPOSED_METHOD){
-        return 0.0;
+        double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
+        double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
+        double SINR = numerator / denominator;
+        return SINR;
     }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
@@ -345,7 +355,7 @@ void precalculation(NodeContainer  &RF_AP_node,
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);
     calculateALLRFDataRate(RF_data_rate_vector,RF_SINR_vector);
 
-    //printRFChannelGainVector(RF_channel_gain_vector);
+    printRFChannelGainVector(RF_channel_gain_vector);
     //printRFSINRVector(RF_SINR_vector);
     //printRFDataRateVector(RF_data_rate_vector);
 }
