@@ -174,7 +174,8 @@ double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix,
         return 0.0;
     }
     else if (PROPOSED_METHOD){
-        return 0.0;
+        double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (EE / 2.0 * PI) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
+        return data_rate;
     }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
@@ -193,7 +194,7 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
     if(RLLB && !LASINR && !LAEQOS){
         double distance = getDistance(RF_AP,UE_node);
         std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
-        boost::math::rayleigh_distribution<double> rayleigh(0.29); // !*-*-NOTSURE*-*-!
+        boost::math::rayleigh_distribution<double> rayleigh(2.46); // !*-*-NOTSURE*-*-!
         std::uniform_real_distribution<double> random_p(0.0, 1.0);
         for(int i = 0; i<100000 ; i++){
                 p = random_p(gen);
@@ -201,14 +202,9 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         }
         H /= 100000; // hr : the small-scale fading gain, which follows independent identical Rayleigh distribution with 2.46 dB average power
 
-        double L_d;
-        if(distance <= breakpoint_distance){
-            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + 3; // XSF refers to the shadowing loss , 3dB
-        }
-        else{
-            L_d = 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10((double)distance / breakpoint_distance) + 3;
-        }
-        double rf_los_channel_gain = sqrt(pow(10,(-L_d/10.0))) * H ;
+        double L_d = (distance < breakpoint_distance)? 20 * log10(distance * RF_carrier_frequency) - 147.5 + 3 : 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10(distance / breakpoint_distance) + 3;
+        std::cout << "!!!!!!!!!" << H << "\n";
+        double rf_los_channel_gain = std::pow(10,(-L_d/10.0)) * std::pow(H,2) ;
         return rf_los_channel_gain;
     }
     else if((LASINR || LAEQOS) && !RLLB){
@@ -282,29 +278,10 @@ void calculateAllRFSINR(std::vector<double> &RF_SINR_vector,std::vector<double> 
     }
 }
 double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_index) {
-    if(RLLB && !LASINR && !LAEQOS){
-        double numerator = RF_AP_power * pow(RF_channel_gain_vector[UE_index],2);
-        double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
-        double SINR = numerator / denominator;
-        return SINR;
-    }
-    else if((LASINR || LAEQOS) && !RLLB){
-        double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
-        double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
-        double SINR = numerator / denominator;
-        return SINR;
-    }
-    else if (PROPOSED_METHOD){
-        double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
-        double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
-        double SINR = numerator / denominator;
-        return SINR;
-    }
-    else{
-        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
-        return 0.0;
-    }
-
+    double numerator = RF_AP_power * RF_channel_gain_vector[UE_index];
+    double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
+    double SINR = numerator / denominator;
+    return SINR;
 }
 
 
@@ -319,7 +296,8 @@ double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index){
         return 0.0;
     }
     else if (PROPOSED_METHOD){
-        return 0.0;
+        double data_rate = RF_AP_bandwidth / 2.0 * log2(1 + RF_SINR_vector[UE_index]);
+        return data_rate;
     }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
@@ -349,13 +327,13 @@ void precalculation(NodeContainer  &RF_AP_node,
 
     //printVlcLosMatrix(VLC_LOS_matrix);
     //printVlcSinrMatrix(VLC_SINR_matrix);
-    //printVlcDataRateMatrix(VLC_data_rate_matrix);
+    printVlcDataRateMatrix(VLC_data_rate_matrix);
 
     calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector);
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);
     calculateALLRFDataRate(RF_data_rate_vector,RF_SINR_vector);
 
-    printRFChannelGainVector(RF_channel_gain_vector);
+    //printRFChannelGainVector(RF_channel_gain_vector);
     //printRFSINRVector(RF_SINR_vector);
-    //printRFDataRateVector(RF_data_rate_vector);
+    printRFDataRateVector(RF_data_rate_vector);
 }

@@ -364,6 +364,9 @@ int main(int argc, char *argv[])
         else if(RLLB){
             method = "benchmark-RLLB";
         }
+        else if(PROPOSED_METHOD){
+            method = "proposed";
+        }
         else{
             method = "benchmark-LAEQOS";
         }
