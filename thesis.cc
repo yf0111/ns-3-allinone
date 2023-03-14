@@ -257,9 +257,9 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     }
     recorded_average_satisfaction[state] = (double) total_UE_satis / UE_num;
 
-    std::cout << "avg outage: "<<recorded_average_outage_probability[state] << std::endl;
-    std::cout << "avg data rate: "<<recorded_average_data_rate[state] << std::endl;
-    std::cout << "avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl<<std::endl;
+    std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
+    std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl;
+    std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl<<std::endl;
 
 
 
@@ -336,17 +336,45 @@ int main(int argc, char *argv[])
 
     // overall avg. outage probability
     double avg_outage_probability = 0.0;
-    for(int i = 0 ; i < state_num ; i++){
-        avg_outage_probability += recorded_average_outage_probability[i];
+    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
+        // record last 10% results
+        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
+            avg_outage_probability += recorded_average_outage_probability[i + 90.0 / 100.0 * state_num];
+        }
+        avg_outage_probability = avg_outage_probability / (10.0 / 100.0 * state_num);
     }
-    avg_outage_probability = avg_outage_probability / state_num;
+    else if(!RLLB && (LASINR || LAEQOS || PROPOSED_METHOD)){
+        for(int i = 0 ; i < state_num ; i++){
+            avg_outage_probability += recorded_average_outage_probability[i];
+        }
+        avg_outage_probability = avg_outage_probability / state_num;
+    }
+    else{
+        std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
+    }
+
+
+
 
     // overall avg. data rate
     double avg_data_rate = 0.0;
-    for(int i = 0 ; i < state_num ; i++){
-        avg_data_rate += recorded_average_data_rate[i];
+    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
+        // record last 10% results
+        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
+            avg_data_rate += recorded_average_data_rate[i + 90.0 / 100.0 * state_num];
+        }
+        avg_data_rate = avg_data_rate / (10.0 / 100.0 * state_num);
     }
-    avg_data_rate = avg_data_rate / state_num;
+    else if(!RLLB && (LASINR || LAEQOS || PROPOSED_METHOD)){
+        for(int i = 0 ; i < state_num ; i++){
+            avg_data_rate += recorded_average_data_rate[i];
+        }
+        avg_data_rate = avg_data_rate / state_num;
+    }
+    else{
+        std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
+    }
+
 
     // calculate the actual executing time
     struct timespec tmp = diff(start, end);
@@ -355,7 +383,7 @@ int main(int argc, char *argv[])
 
     std::string method;
     if(PROPOSED_METHOD){
-
+        method = "proposed";
     }
     else{
         if(LASINR){
@@ -363,9 +391,6 @@ int main(int argc, char *argv[])
         }
         else if(RLLB){
             method = "benchmark-RLLB";
-        }
-        else if(PROPOSED_METHOD){
-            method = "proposed";
         }
         else{
             method = "benchmark-LAEQOS";

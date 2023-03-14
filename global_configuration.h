@@ -12,17 +12,17 @@
 */
 
 #define DEBUG_MODE 0
-#define PROPOSED_METHOD 1
+#define PROPOSED_METHOD 0
 #define LASINR 0
 #define LAEQOS 0
-#define RLLB 0
+#define RLLB 1
 
 
 const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 1; // @-ref'1- 100@ , @-ref'2- 1@
+const int state_num = 10000; // @-ref'1- 100@ , @-ref'2- 1@
 
 
 /*  RF AP  */
@@ -75,7 +75,7 @@ const double receiver_area = 1e-4; // 1 cm^2 = 0.0001 m^2
 
 /*  RF Channel  */
 const double RF_carrier_frequency = 2.4e9; // Hz //
-const double breakpoint_distance = 0.05; // m // @-ref'1- 0.05@ , @-ref'2- 5@
+const double breakpoint_distance = 5; // m // @-ref'1- 0.05@ , @-ref'2- 5@
 const double RF_three_db_cutoff = 1;
 
 
@@ -101,7 +101,8 @@ const double eta_hho = 0.9;
 const double eta_vho = 0.6;
 const double C_one = 100; // C1
 const double C_two = 1000; // C2
-const double discount_factor = 0.9; // γ // gamma
-const double delta = 0.01; //
-const int total_episodes = 1;
+
+
+/* proposed system parameter */
+const double SINR_threshold = 5; // dB
 #endif // GLOBAL_CONFIGURATION_H

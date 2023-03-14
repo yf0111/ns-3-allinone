@@ -528,6 +528,7 @@ void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
             UE_final_satisfaction_vector[i] = us;
         }
     }
+    std::cout<< flag << "\n";
     flag++;
 }
 

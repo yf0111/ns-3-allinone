@@ -151,8 +151,14 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int V
     }
     double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
     double SINR = std::pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
-    /* change to logarithmic SINR : is because A^2 need to convert to dBm ? */
-    return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
+    if ((LASINR || LAEQOS || PROPOSED_METHOD) && !RLLB) // change to dB
+        return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
+    else
+        return SINR;
+    /*
+        SINR to dB : (SINR == 0.0) ? 0.0 : 10*log10(SINR);
+        dB to SINR : std::pow(10.0,dB/10.0);
+    */
 }
 
 
@@ -166,7 +172,7 @@ void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, 
     }
 }
 double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, int VLC_AP_index , int UE_index){
-    if(RLLB && !LASINR && !LAEQOS || PROPOSED_METHOD){
+    if(RLLB && !LASINR && !LAEQOS){
         double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (6.0 / PI * EE) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
         return std::isnan(data_rate)? 0.0 : data_rate;
     }
@@ -203,7 +209,6 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         H /= 100000; // hr : the small-scale fading gain, which follows independent identical Rayleigh distribution with 2.46 dB average power
 
         double L_d = (distance < breakpoint_distance)? 20 * log10(distance * RF_carrier_frequency) - 147.5 + 3 : 20 * log10(distance * RF_carrier_frequency) - 147.5 + 35 * log10(distance / breakpoint_distance) + 3;
-        std::cout << "!!!!!!!!!" << H << "\n";
         double rf_los_channel_gain = std::pow(10,(-L_d/10.0)) * std::pow(H,2) ;
         return rf_los_channel_gain;
     }
@@ -327,7 +332,7 @@ void precalculation(NodeContainer  &RF_AP_node,
 
     //printVlcLosMatrix(VLC_LOS_matrix);
     //printVlcSinrMatrix(VLC_SINR_matrix);
-    printVlcDataRateMatrix(VLC_data_rate_matrix);
+    //printVlcDataRateMatrix(VLC_data_rate_matrix);
 
     calculateRFChannelGain(RF_AP_node, UE_nodes, my_UE_list, RF_channel_gain_vector);
     calculateAllRFSINR(RF_SINR_vector, RF_channel_gain_vector);
@@ -335,5 +340,5 @@ void precalculation(NodeContainer  &RF_AP_node,
 
     //printRFChannelGainVector(RF_channel_gain_vector);
     //printRFSINRVector(RF_SINR_vector);
-    printRFDataRateVector(RF_data_rate_vector);
+    //printRFDataRateVector(RF_data_rate_vector);
 }
