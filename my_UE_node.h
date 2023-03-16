@@ -16,8 +16,12 @@ class MyUeNode
 
 public:
     MyUeNode(int node_ID, Vector pos, double required_data_rate);
+    MyUeNode(int node_ID, Vector pos, double required_data_rate, int group);
 
     int getID(void);
+
+    void setGroup(int UE_group);
+    int getGroup(void);
 
     void setPosition(Vector pos_from_mobility_model);
     Vector getPosition(void);
@@ -25,8 +29,8 @@ public:
     void setRequiredDataRate(double data_rate_in_Mbps);
     double getRequiredDataRate(void);
 
-    void setCurrAssociatedAP(int associated_AP_index); // diff?
-    void changeCurrAssociatedAP(int associated_AP_index); // diff?
+    void setCurrAssociatedAP(int associated_AP_index);
+    void changeCurrAssociatedAP(int associated_AP_index);
     int getCurrAssociatedAP(void);
     int getPrevAssociatedAP(void);
 
@@ -47,6 +51,7 @@ public:
 private:
     int node_ID;
     Vector pos;
+    int group; // 1 for urllc UE , 2 for normal UE
     double required_data_rate;
     double polar_angle; // θ in rad
     double azimuth_angle; // ω in rad

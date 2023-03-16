@@ -12,17 +12,17 @@
 */
 
 #define DEBUG_MODE 0
-#define PROPOSED_METHOD 0
+#define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
-#define RLLB 1
+#define RLLB 0
 
 
 const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 10000; // @-ref'1- 100@ , @-ref'2- 1@
+const int state_num = 1; // @-ref'1- 100@ , @-ref'2- 1@
 
 
 /*  RF AP  */
@@ -30,7 +30,7 @@ const int RF_AP_num = 1;
 const int RF_AP_height = 3; // m //
 const int RF_AP_bandwidth = 20; // MHz //
 const double RF_AP_power = 0.1; // W //
-const double RF_noise_power_spectral_density = 3.98e-15 ; // A^2/MHz // @-ref'1- 3.98e-15@ , @-ref'2- 3.16e-11@
+const double RF_noise_power_spectral_density = 3.16e-11 ; // A^2/MHz // @-ref'1- 3.98e-15@ , @-ref'2- 3.16e-11@
 
 /*
 dBm -> A^2
@@ -51,7 +51,7 @@ const int VLC_AP_per_row = 2;
 const double VLC_AP_height = 3; // m //
 const double VLC_AP_power = 3; // W //
 const int VLC_AP_bandwidth = 40; // MHz //
-const double VLC_noise_power_spectral_density = 1e-15; // A^2/MHz // @-ref'1- 1e-15@ , @-ref'2- 1e-24@
+const double VLC_noise_power_spectral_density = 1e-24; // A^2/MHz // @-ref'1- 1e-15@ , @-ref'2- 1e-24@
 /*
 ref'1 : 1e-21 A^2/Hz = 1e-15 A^2/MHz
 ref'2 : -210 dBm/MHz ~= 1e-24 A^2/MHz
@@ -105,4 +105,6 @@ const double C_two = 1000; // C2
 
 /* proposed system parameter */
 const double SINR_threshold = 5; // dB
+const double urllc_dataratea_upper_bound = 70; // Mbps
+const double normal_data_rate_upper_bound = 200; // Mbps
 #endif // GLOBAL_CONFIGURATION_H

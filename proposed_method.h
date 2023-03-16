@@ -31,9 +31,15 @@ double calDataRate(std::vector<double> &RF_SINR_vector,
                    int UE_index);
 
 
-void calReliability(std::vector<double> &RF_SINR_vector,
+void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
                       std::vector<std::vector<double>> &VLC_SINR_matrix,
                       std::vector<double> &US_reliability);
+
+void cal_US_Latency(std::vector<double> &US_latency);
+
+void cal_US_DataRate(std::vector<double> &final_data_rate,
+                     std::vector<double> &require_data_rate,
+                     std::vector<double> &US_datarate);
 
 double SINR_to_dB(double SINR);
 

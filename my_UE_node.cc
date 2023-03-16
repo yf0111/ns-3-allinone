@@ -14,26 +14,43 @@
 
 using namespace ns3;
 
-// w[n] is a white noise process, which is a random process of random variables that are uncorrelated, have mean zero, and a finite variance
-// random orientation (Orientation based RWP mobility model) : generator is angle random generator
+MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate)
+{
+    this->node_ID = node_ID;
+    this->pos = pos;
+    this->required_data_rate = required_data_rate;
 
-MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate) //* : generator(std::chrono::system_clock::now().time_since_epoch().count()), distribution(0.0, sqrt(noise_variance))
-    {
-        this->node_ID = node_ID;
-        this->pos = pos;
-        this->required_data_rate = required_data_rate;
+    polar_angle = 0.0;
+    azimuth_angle = 0.0;
+    prev_associated_AP = -1;
+    curr_associated_AP = -1;
+}
 
-        polar_angle = 0.0;
-        azimuth_angle = 0.0;
-        prev_associated_AP = -1;
-        curr_associated_AP = -1;
-        //* RU_block.clear();
-    }
+MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate, int group) //* : generator(std::chrono::system_clock::now().time_since_epoch().count()), distribution(0.0, sqrt(noise_variance))
+{
+    this->node_ID = node_ID;
+    this->pos = pos;
+    this->required_data_rate = required_data_rate;
+    this->group = group;
+
+    polar_angle = 0.0;
+    azimuth_angle = 0.0;
+    prev_associated_AP = -1;
+    curr_associated_AP = -1;
+}
 
 
 
 int MyUeNode::getID(void) {
     return node_ID;
+}
+
+void MyUeNode::setGroup(int UE_group){
+    group = UE_group;
+}
+
+int MyUeNode::getGroup(void){
+    return group;
 }
 
 void MyUeNode::setPosition(Vector pos_from_mobility_model) {

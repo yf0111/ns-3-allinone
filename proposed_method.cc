@@ -11,6 +11,7 @@
 #include "channel.h"
 #include "my_UE_node.h"
 #include "proposed_method.h"
+#include "benchmark.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
@@ -72,21 +73,63 @@ void proposedStaticLB(int &state,
         }
     }
 
-    for(int i = 0 ; i < RF_AP_num + VLC_AP_num ; i++){
-        for(int j = 0 ; j < UE_num ; j++){
-            reachable_data_rate[i][j] = calDataRate(RF_SINR_vector,VLC_SINR_matrix,AP_allocate_time,i,j);
-            std::cout << reachable_data_rate[i][j] << "\t";
+    // get UE require data rate
+    std::vector<double> UE_require_data_rate = createUEDemandVector(my_UE_list);
+
+
+
+    // set UE final date rate
+    std::vector<double> UE_final_data_rate = std::vector<double> (UE_num , 0.0);
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        double data_rate = 0.0;
+        for(int AP_index = 0 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
+            reachable_data_rate[AP_index][UE_index] = calDataRate(RF_SINR_vector,VLC_SINR_matrix,AP_allocate_time,AP_index,UE_index);
+            data_rate += reachable_data_rate[AP_index][UE_index];
         }
-        std::cout <<"\n";
+        UE_final_data_rate[UE_index] = data_rate;
     }
 
+    // init AP selection (first state is INT_MAX)
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        my_UE_list[UE_index].changeCurrAssociatedAP(INT_MAX);
+    }
 
-    /*std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
-    calReliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
+    // calculate UE satisfaction (US)
+    std::vector<double> US_reliability = std::vector<double> (UE_num , 0.0);
+    std::vector<double> US_latency = std::vector<double> (UE_num , 0.0);
+    std::vector<double> US_datarate = std::vector<double> (UE_num , 0.0);
+    cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
+    cal_US_Latency(US_latency);
+    cal_US_DataRate(UE_final_data_rate,UE_require_data_rate,US_datarate);
 
-    for(int i = 0 ; i < UE_num ; i++){
-        std::cout << US_reliability[i] << "\n";
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        std::cout << cal_US_Reliability[UE_index] << "\t" << cal_US_Latency[UE_index] << "\t"<< cal_US_DataRate[UE_index] << "\n";
+    }
+
+    /*
+    // change AP selection
+    for( int UE_index = 0; UE_index < UE_num ; UE_index++){
+        for(int AP_index = 0 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
+            int AP_associated_index = INT_MAX;
+            double AP_associated_max_value = -DBL_MAX;
+            if(my_UE_list[UE_index].getGroup() == 1){ // uRLLC UE
+
+                // (看哪個AP可以給他最高的satisfaction)
+
+            }
+            if(my_UE_list[UE_index].getGroup() == 2){ // normal UE
+                // (看哪個AP可以給他最高的require rate)
+                if(reachable_data_rate[AP_index][UE_index] > AP_associated_max_value){
+                    AP_associated_index = AP_index;
+                    AP_associated_max_value = reachable_data_rate[AP_index][UE_index];
+                }
+            }
+            if(AP_associated_index != INT_MAX){
+                my_UE_list[UE_index].setCurrAssociatedAP(AP_associated_index);
+            }
+        }
     }*/
+
 
 }
 
@@ -102,10 +145,10 @@ double calDataRate(std::vector<double> &RF_SINR_vector,
     return std::isnan(data_rate)? 0.0 : data_rate;
 }
 
-void calReliability(std::vector<double> &RF_SINR_vector,
+void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
                       std::vector<std::vector<double>> &VLC_SINR_matrix,
-                      std::vector<double> &US_reliability)
-{
+                      std::vector<double> &US_reliability){
+    /* check receive SINR > threshold SINR or not , 1/0 */
     for( int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         for(int AP_index = 0 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
             if( AP_index < RF_AP_num ){ //RF
@@ -121,6 +164,22 @@ void calReliability(std::vector<double> &RF_SINR_vector,
                 }
             }
         }
+    }
+}
+
+void cal_US_Latency(std::vector<double> &US_latency){
+    /* Is handover required? no handover : 1 ; handover time < threshold handover time 1/0 */
+    for(int i = 0 ; i < UE_num ; i++){
+        US_latency[i] = 1;
+    }
+}
+
+void cal_US_DataRate(std::vector<double> &final_data_rate,
+                     std::vector<double> &require_data_rate,
+                     std::vector<double> &US_datarate){
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        std::cout << final_data_rate[UE_index] << "\t" << require_data_rate[UE_index] << "\t" <<  std::min((double)final_data_rate[UE_index] / require_data_rate[UE_index],1.0) << "\n";
+        US_datarate[UE_index] = std::min((double)final_data_rate[UE_index] / require_data_rate[UE_index],1.0) ;
     }
 }
 
