@@ -38,7 +38,10 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node); // in meters
 /* VLC SINR */
 void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix);
 double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int VLC_AP_index,int UE_index);
-
+void updateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix,
+                      std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation);
+double estimateUpdateVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int VLC_AP_index,int UE_index,
+                                std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation);
 
 /* VLC data rate */
 void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix,std::vector<std::vector<double>> &VLC_data_rate_matrix);
@@ -54,7 +57,8 @@ double estimateOneRFICIChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_n
 /* RF SINR */
 void calculateALLRFSINR(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_channel_gain_vector);
 double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_index);
-
+void updateAllRFSINR(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_channel_gain_vector, std::vector<std::vector<double>> &AP_power_allocation);
+double estimateUpdateRFSINR( std::vector<double> &RF_channel_gain_vector, int UE_index, std::vector<std::vector<double>> &AP_power_allocation);
 
 /* RF data rate */
 void calculateALLRFDataRate(std::vector<double> &RF_data_rate_vector,std::vector<double> &RF_SINR_vector);

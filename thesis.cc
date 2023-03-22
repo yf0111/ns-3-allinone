@@ -353,8 +353,16 @@ int main(int argc, char *argv[])
         std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
     }
 
-
-
+    // overall avg. satisfaction
+    double avg_satisfaction = 0.0;
+    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
+        // record last 10% results
+        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
+            avg_satisfaction += std::min(recorded_average_satisfaction[i + 90.0 / 100.0 * state_num],1.0);
+        }
+        avg_satisfaction = avg_satisfaction / (10.0 / 100.0 * state_num);
+        std::cout << "overall avg satisfaction: "<< avg_satisfaction << std::endl;
+    }
 
     // overall avg. data rate
     double avg_data_rate = 0.0;
@@ -375,6 +383,9 @@ int main(int argc, char *argv[])
         std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
     }
 
+
+    std::cout << "overall avg outage: "<< avg_outage_probability << std::endl;
+    std::cout << "overall avg data rate: "<< avg_data_rate << std::endl<<std::endl;
 
     // calculate the actual executing time
     struct timespec tmp = diff(start, end);
@@ -415,7 +426,11 @@ int main(int argc, char *argv[])
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);
     }
-    else {
+    else if(RLLB){
+        output << avg_outage_probability << "," << avg_satisfaction << "," << avg_data_rate;
+        output << std::endl;
+    }
+    else{
         output << avg_outage_probability << "," << avg_data_rate;
         output << std::endl;
     }
@@ -429,9 +444,6 @@ int main(int argc, char *argv[])
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //begin implementation of sending "Application"
-/*
-    2023/01/10 : NO NEED to change
-*/
 
 void StartFlow (Ptr<Socket> localSocket,
                 Ipv4Address servAddress,

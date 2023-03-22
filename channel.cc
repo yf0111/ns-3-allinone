@@ -151,16 +151,44 @@ double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int V
     }
     double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
     double SINR = std::pow(conversion_efficiency * VLC_AP_power * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
-    if ((LASINR || LAEQOS || PROPOSED_METHOD) && !RLLB) // change to dB
+    if ((LASINR || LAEQOS )&& !PROPOSED_METHOD && !RLLB) // change to dB
         return (SINR == 0.0) ? 0.0 : 10*log10(SINR);
-    else
+    else if ((PROPOSED_METHOD || RLLB) && !LASINR && !LAEQOS)
         return SINR;
     /*
         SINR to dB : (SINR == 0.0) ? 0.0 : 10*log10(SINR);
         dB to SINR : std::pow(10.0,dB/10.0);
     */
 }
+void updateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix,
+                      std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation){
+    for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            VLC_SINR_matrix[VLC_AP_index][UE_index] = estimateUpdateVlcSINR(VLC_LOS_matrix, VLC_AP_index, UE_index,AP_association_matrix,AP_power_allocation);
+        }
+    }
+}
+double estimateUpdateVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int VLC_AP_index,int UE_index,
+                                std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation){
+    double i = 0;
+    for(int check = 0 ; check < UE_num ; check++){
+        if(check != UE_index && AP_association_matrix[VLC_AP_index][check] == 1)
+            i = 1;
+    }
 
+    double interference = 0.0;
+    if( i == 1 ){
+        for (int AP_index = 0; AP_index < VLC_AP_num; AP_index++) {
+            if (AP_index != VLC_AP_index){
+                interference += std::pow(conversion_efficiency * (VLC_AP_power * AP_power_allocation[VLC_AP_index+1][UE_index]) * VLC_LOS_matrix[AP_index][UE_index],2);
+            }
+        }
+    }
+
+    double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
+    double SINR = std::pow(conversion_efficiency * (VLC_AP_power * AP_power_allocation[VLC_AP_index+1][UE_index]) * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
+    return SINR;
+}
 
 
 /*  VLC data rate  */
@@ -172,23 +200,22 @@ void calculateAllVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, 
     }
 }
 double estimateOneVlcDataRate(std::vector<std::vector<double>> &VLC_SINR_matrix, int VLC_AP_index , int UE_index){
-    if(RLLB && !LASINR && !LAEQOS){
+    if(RLLB || PROPOSED_METHOD && !LASINR && !LAEQOS ){
         double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (6.0 / PI * EE) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
         return std::isnan(data_rate)? 0.0 : data_rate;
     }
     else if ((LASINR || LAEQOS) && !RLLB){
         return 0.0;
     }
-    else if (PROPOSED_METHOD){
-        double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (EE / 2.0 * PI) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
-        return data_rate;
-    }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
         return 0.0;
     }
+    /*else if (PROPOSED_METHOD){
+        double data_rate = (VLC_AP_bandwidth / 2.0) * log2( 1 + (EE / 2.0 * PI) * VLC_SINR_matrix[VLC_AP_index][UE_index]);
+        return data_rate;
+    }*/
 }
-
 
 
 /*  RF Channel Gain  */
@@ -197,7 +224,7 @@ void calculateRFChannelGain(NodeContainer &RF_AP_node,NodeContainer &UE_nodes,st
         RF_channel_gain_vector[i] = estimateOneRFChannelGain(RF_AP_node.Get(0), UE_nodes.Get(i), my_UE_list[i]);
 }
 double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node){
-    if(RLLB && !LASINR && !LAEQOS){
+    if(RLLB || PROPOSED_METHOD && !LASINR && !LAEQOS){
         double distance = getDistance(RF_AP,UE_node);
         std::default_random_engine gen(std::chrono::system_clock::now().time_since_epoch().count());
         boost::math::rayleigh_distribution<double> rayleigh(2.46); // !*-*-NOTSURE*-*-!
@@ -246,7 +273,11 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
         double rf_los_channel_gain = std::norm(H_comp) * std::pow(10,((-1)*L_d)/10.0);
         return rf_los_channel_gain;
     }
-    else if (PROPOSED_METHOD){
+    else{
+        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
+        return 0.0;
+    }
+    /*else if (PROPOSED_METHOD){
         double distance = getDistance(RF_AP,UE_node);
         std::normal_distribution<double> Gaussian (0.0,10);    //normal distribution 即 Gaussian distribution
         boost::math::rayleigh_distribution<double> rayleigh(0.8); // standard rayleigh distribution
@@ -267,13 +298,9 @@ double estimateOneRFChannelGain(Ptr<Node> RF_AP, Ptr<Node> UE, MyUeNode &UE_node
             L_d = 20 * log10(RF_carrier_frequency * std::pow(distance,2.75) / std::pow(breakpoint_distance,1.75)) - 147.5;
         double rf_los_channel_gain = std::pow(H,2) * std::pow(10,((-1)*L_d)/10.0);
         return rf_los_channel_gain;
-    }
-    else{
-        std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
-        return 0.0;
-    }
-}
+    }*/
 
+}
 
 
 /*  RF SINR  */
@@ -288,26 +315,37 @@ double estimateOneRFSINR(std::vector<double> &RF_channel_gain_vector,int UE_inde
     double SINR = numerator / denominator;
     return SINR;
 }
-
+void updateAllRFSINR(std::vector<double> &RF_SINR_vector,std::vector<double> &RF_channel_gain_vector, std::vector<std::vector<double>> &AP_power_allocation){
+    for( int j = 0; j < UE_num ; j++){
+        RF_SINR_vector[j] = estimateUpdateRFSINR(RF_channel_gain_vector, j , AP_power_allocation);
+    }
+}
+double estimateUpdateRFSINR( std::vector<double> &RF_channel_gain_vector, int UE_index, std::vector<std::vector<double>> &AP_power_allocation){
+    double numerator = (RF_AP_power * AP_power_allocation[0][UE_index]) * RF_channel_gain_vector[UE_index];
+    double denominator = RF_noise_power_spectral_density * RF_AP_bandwidth;
+    double SINR = numerator / denominator;
+    return SINR;
+}
 
 
 /*  RF data rate  */
 double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index){
-    if(RLLB && !LASINR && !LAEQOS){
+    if(RLLB || PROPOSED_METHOD && !LASINR && !LAEQOS){
         double data_rate = RF_AP_bandwidth * log2(1 + RF_SINR_vector[UE_index]);
         return std::isnan(data_rate)? 0.0 : data_rate;
     }
     else if ((LASINR || LAEQOS) && !RLLB){
         return 0.0;
     }
-    else if (PROPOSED_METHOD){
-        double data_rate = RF_AP_bandwidth / 2.0 * log2(1 + RF_SINR_vector[UE_index]);
-        return data_rate;
-    }
     else{
         std::cout<<"**(channel.cc) global configuration about method is WRONG!**\n";
         return 0.0;
     }
+    /*else if (PROPOSED_METHOD){
+        double data_rate = RF_AP_bandwidth / 2.0 * log2(1 + RF_SINR_vector[UE_index]);
+        return data_rate;
+    }*/
+
 }
 void calculateALLRFDataRate(std::vector<double> &RF_data_rate_vector,std::vector<double> &RF_SINR_vector){
     for(int j = 0 ; j < UE_num ; j++){
