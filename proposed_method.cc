@@ -108,21 +108,36 @@ void proposedStaticLB(int &state,
         }
     }
 
-    printUEFinalDataRate(UE_final_data_rate_vector);
+    // step 4 : Store normal device which not getting enough data rate and reallocate RF AP power
+    // *-----------------2023/03/24 TODO : reallocate RF AP power-------------------*
+    std::vector<std::pair<int, double>> insufficient_normal_ue; // < ue index , require data rate - final data rate >
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        std::cout << "UE : " << UE_index << " ,require : " << UE_require_data_rate[UE_index] << " ,get : " << UE_final_data_rate_vector[UE_index] << "\n";
+        if(my_UE_list[UE_index].getGroup() == 2 &&  UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
+            insufficient_normal_ue.push_back(std::make_pair(UE_index , UE_require_data_rate[UE_index] - UE_final_data_rate_vector[UE_index]));
+        }
+    }
 
-    /*-------0323 : start from step 3---------*/
-}
 
 
-double calDataRate(std::vector<double> &RF_SINR_vector,
-                   std::vector<std::vector<double>> &VLC_SINR_matrix,
-                   std::vector<std::vector<double>> &AP_allocate_time,
-                   int AP_index,
-                   int UE_index)
-{
-    double data_rate = 0.0;
-    data_rate = (AP_index < RF_AP_num)? RF_AP_bandwidth / 2.0 * log2(1 + RF_SINR_vector[UE_index])* AP_allocate_time[AP_index][UE_index] : VLC_AP_bandwidth / 2.0 * log2(1 + EE / 2.0 * PI * VLC_SINR_matrix[AP_index-1][UE_index]) * AP_allocate_time[AP_index][UE_index];
-    return std::isnan(data_rate)? 0.0 : data_rate;
+    // step 5 : calculate user satisfaction
+    std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
+    std::vector<double> US_latency = std::vector<double> (UE_num,0.0);
+    std::vector<double> US_datarate = std::vector<double> (UE_num,0.0);
+    std::vector<double> UE_satisfaction = std::vector<double> (UE_num,0.0);
+    cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
+    cal_US_Latency(US_latency,UE_final_data_rate_vector);
+    cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
+    std::cout << "\n UE satisfaction as below : \n" ;
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        if(my_UE_list[UE_index].getGroup() == 1){ // urllc
+            UE_satisfaction[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2 * US_datarate[UE_index]);
+        }
+        if(my_UE_list[UE_index].getGroup() == 2){ // normal
+            UE_satisfaction[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
+        }
+        std::cout << UE_satisfaction[UE_index] << "\n";
+    }
 }
 
 void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
@@ -147,10 +162,16 @@ void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
     }
 }
 
-void cal_US_Latency(std::vector<double> &US_latency){
-    /* Is handover required? no handover : 1 ; handover time < threshold handover time 1/0 */
-    for(int i = 0 ; i < UE_num ; i++){
-        US_latency[i] = 1;
+void cal_US_Latency(std::vector<double> &US_latency,
+                    std::vector<double> &UE_final_data_rate_vector){
+    /* TL = Tt + Ta + Tb + Tr + Tp , (TL < Tmax (1ms))? 1:0 */
+    /* Tw = waiting time in queue (maybe can calculate average waiting time?)*/
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        double TL = 0.1 + 0.3 ; // Ta + Tb = 0.1ms , Tr + Tp = 0.3ms
+        TL += packet_size / (1e6 * UE_final_data_rate_vector[UE_index]) * 1e-3;
+        if( TL < T_max){
+            US_latency[UE_index] = 1;
+        }
     }
 }
 

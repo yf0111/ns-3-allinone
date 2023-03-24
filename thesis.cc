@@ -111,12 +111,6 @@ std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
 std::multimap<std::vector<double>,int> policy_map; // ((SAP/LA , x position , y position) , AP association)
 std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
 
-/*std::vector<Action_type> action_vec(state_num);
-std::vector<Env_state_type> env_state_vec(state_num);
-std::vector<double> value_func_vec(state_num,0.0);
-std::map<Env_state_type,Action_type> policy_map;
-std::vector<double> dqn_vec(state_num,0.0);*/
-
 
 
 static const uint32_t totalTxBytes = 10000000;
@@ -165,19 +159,12 @@ static void initialize() {
     AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
 
     VLC_LOS_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0));
-    VLC_SINR_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in dB
-    //VLC_SINR_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
+    VLC_SINR_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0));
     VLC_data_rate_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
-    //VLC_data_rate_matrix_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
-    //VLC_allocated_power_3d = std::vector<std::vector<std::vector<double>>> (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 250.0 / VLC_AP_num / VLC_AP_subchannel))); //W
 
     RF_channel_gain_vector = std::vector<double> (UE_num,0.0);
     RF_SINR_vector = std::vector<double> (UE_num,0.0);
     RF_data_rate_vector = std::vector<double> (UE_num, 0.0); // in Mbps
-    //RF_SINR_vector_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.0));
-    //RF_data_rate_vector_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.0));
-    //RF_allocated_power_2d = std::vector<std::vector<double>> (RF_AP_subchannel,std::vector<double>(UE_num,0.25 / RF_AP_num / RF_AP_subchannel)); //W
-    //RF_ICI_channel_gain_vector = std::vector<double>(UE_num,0.0);
 
     policy_map.clear();
 
@@ -262,19 +249,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl<<std::endl;
 
 
-
-    // use another storage to keep UE's information
-    // since somehow get nothing when accessing these information through my_UE_list after Simulator::Run()
-    /*
-    2023/01/13 : NEED change !
-    if (state == state_num - 1) {
-        for (int i = 0; i < my_UE_list.size(); i++) {
-            recorded_avg_throughput_per_UE[i] = my_UE_list[i].calculateAvgThroughput();
-            recorded_avg_satisfaction_per_UE[i] = my_UE_list[i].calculateAvgSatisfaction();
-        }
-    }*/
-
-
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
 
@@ -337,9 +311,9 @@ int main(int argc, char *argv[])
     // overall avg. outage probability
     double avg_outage_probability = 0.0;
     if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
-        // record last 10% results
-        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
-            avg_outage_probability += recorded_average_outage_probability[i + 90.0 / 100.0 * state_num];
+        // record last 20% results
+        for(int i = 0 ; i < 20.0 / 100.0 * state_num ; i++){
+            avg_outage_probability += recorded_average_outage_probability[i + 80.0 / 100.0 * state_num];
         }
         avg_outage_probability = avg_outage_probability / (10.0 / 100.0 * state_num);
     }

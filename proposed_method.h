@@ -24,18 +24,12 @@ void proposedStaticLB(int &state,
                      std::vector<double> &UE_final_data_rate_vector);
 
 
-double calDataRate(std::vector<double> &RF_SINR_vector,
-                   std::vector<std::vector<double>> &VLC_SINR_matrix,
-                   std::vector<std::vector<double>> &AP_allocate_time,
-                   int AP_index,
-                   int UE_index);
-
-
 void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
                       std::vector<std::vector<double>> &VLC_SINR_matrix,
                       std::vector<double> &US_reliability);
 
-void cal_US_Latency(std::vector<double> &US_latency);
+void cal_US_Latency(std::vector<double> &US_latency,
+                    std::vector<double> &UE_final_data_rate_vector);
 
 void cal_US_DataRate(std::vector<double> &final_data_rate,
                      std::vector<double> &require_data_rate,

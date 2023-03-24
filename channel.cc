@@ -327,7 +327,6 @@ double estimateUpdateRFSINR( std::vector<double> &RF_channel_gain_vector, int UE
     return SINR;
 }
 
-
 /*  RF data rate  */
 double estimateOneRFDataRate(std::vector<double> &RF_SINR_vector,int UE_index){
     if(RLLB || PROPOSED_METHOD && !LASINR && !LAEQOS){

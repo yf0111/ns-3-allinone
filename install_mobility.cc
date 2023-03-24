@@ -66,15 +66,11 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     for (int i = 0; i < VLC_AP_num; i++) {
         double x = (i%VLC_AP_per_row + 1) * delta;
         double y = (i/VLC_AP_per_row + 1) * delta;
-
         // change origin from left-down to the center
         x -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
         y -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
-
         VLC_AP_pos_list->Add(Vector(x, y, VLC_AP_height));
     }
-
-
 
     VLC_AP_mobility.SetPositionAllocator(VLC_AP_pos_list);
 

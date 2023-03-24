@@ -12,17 +12,17 @@
 */
 
 #define DEBUG_MODE 0
-#define PROPOSED_METHOD 0
+#define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
-#define RLLB 1
+#define RLLB 0
 
 
 const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 10000; // @-ref'1- 100@ , @-ref'2- 1@
+const int state_num = 1; // @-ref'1- 100@ , @-ref'2- 1@
 
 
 /*  RF AP  */
@@ -60,7 +60,7 @@ const double conversion_efficiency = 0.53; // A/W // optical to electrical conve
 
 
 /*  UE  */
-const int UE_num = 10; // @-ref'1- ?@ , @-ref'2- 10@
+const int UE_num = 20;
 const double UE_height = 1; // m // @-ref'1- 1@ , @-ref'2- 0@
 const double avg_speed = 1.0; // m/s
 const double pause_time = 10.0;
@@ -105,7 +105,9 @@ const double C_two = 1000; // C2
 
 /* proposed system parameter */
 const double SINR_threshold = 5; // dB
-const double urllc_UE_num = UE_num / 2;
+const int urllc_UE_num = UE_num / 2;
+const double packet_size = 250; // byte
+const double T_max = 1; //ms
 const int urllc_dataratea_lower_bound = 1; // Mbps
 const int urllc_dataratea_upper_bound = 20; // Mbps
 const int normal_data_rate_lower_bound = 3; // Mbps

@@ -709,6 +709,20 @@ std::vector<std::vector<double>> SINR_matrix_to_two_high_SINR(std::vector<std::v
         State_SINR[i][1] = (highest_AP_value < 0 )? 0.0 : highest_AP_value;
         State_SINR[i][2] = (second_AP_value < 0 )? 0.0 : second_AP_value;
     }
+    /*  new
+    std::fstream output;
+    output.open("/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/UE_SINR.csv",std::ios::out | std::ios::app );
+    if (!output.is_open()) {
+        std::cout << "Fail to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        for(int i = 0 ; i<UE_num;i++){
+            output << State_SINR[i][0] << "," << State_SINR[i][1] << "," << State_SINR[i][2];
+            output << std::endl;
+        }
+    }
+    output.close();*/
     return State_SINR;
 }
 
