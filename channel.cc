@@ -59,7 +59,7 @@ double estimateOneVlcNonLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &U
 }
 
 // cosψ = 1/d((x_a-x_u)sinθcosω+(y_a-y_u)sinθsinω+(z_a-z_u)cosθ) based on (3)
-double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node) { // 2023/01/10 : parameter Ptr<Node> UE is necessary?
+double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node) {
     double polar_angle = UE_node.getPolarAngle();
     double azimuth_angle = UE_node.getAzimuthAngle();
 

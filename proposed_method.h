@@ -38,4 +38,6 @@ void cal_US_DataRate(std::vector<double> &final_data_rate,
 double SINR_to_dB(double SINR);
 
 double dB_to_SINR(double dB);
+
+bool sort_by_sec(const std::pair<int,int> &a, const std::pair<int,int> &b);
 #endif // PROPOSED_METHOD_H

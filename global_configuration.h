@@ -106,8 +106,9 @@ const double C_two = 1000; // C2
 /* proposed system parameter */
 const double SINR_threshold = 5; // dB
 const int urllc_UE_num = UE_num / 2;
-const double packet_size = 250; // byte
+const double packet_size = 2000; // 250 byte = 2000 bits
 const double T_max = 1; //ms
+const double packet_arrival_rate = 24e-2; // Mbps // 0.12 packet/slot/per IIOT source = 0.12 * 250 (byte) / slot/per IIOT source = 240 bits/1ms = 0.24 Mbps
 const int urllc_dataratea_lower_bound = 1; // Mbps
 const int urllc_dataratea_upper_bound = 20; // Mbps
 const int normal_data_rate_lower_bound = 3; // Mbps

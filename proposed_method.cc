@@ -46,7 +46,7 @@ void proposedStaticLB(int &state,
     // get UE require data rate
     std::vector<double> UE_require_data_rate = createUEDemandVector(my_UE_list);
 
-    // step 1 , urllc -> WiFi , normal -> APS based on LiFi SINR
+    // step 1 (APS), urllc -> WiFi , normal -> APS based on LiFi SINR
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         if(my_UE_list[UE_index].getGroup() == 1){
@@ -65,7 +65,7 @@ void proposedStaticLB(int &state,
         }
     }
 
-    // step 2 , wifi : devide equally , lifi : proportional distribution according to the required data rate
+    // step 2 (RA), wifi : devide equally , lifi : proportional distribution according to the required data rate
     std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
     for(int i = 0 ; i < RF_AP_num + VLC_AP_num ; i++){
         int serve_ue_number = 0;
@@ -117,6 +117,12 @@ void proposedStaticLB(int &state,
             insufficient_normal_ue.push_back(std::make_pair(UE_index , UE_require_data_rate[UE_index] - UE_final_data_rate_vector[UE_index]));
         }
     }
+    sort(insufficient_normal_ue.begin(), insufficient_normal_ue.end(), sort_by_sec); // descending order
+    std::cout << "size:" << insufficient_normal_ue.size() <<"\n";
+    while(!insufficient_normal_ue.empty()){ //while(insufficient_normal_ue不為空 且 有資源可以分 (是不是要計算如果滿足 urllc ue 的話要多少 power))
+        std::cout << "insufficient ue :" << insufficient_normal_ue[insufficient_normal_ue.size()-1].first << " , insufficient data rate :" << insufficient_normal_ue[insufficient_normal_ue.size()-1].second << "\n";
+        insufficient_normal_ue.pop_back();
+    }
 
 
 
@@ -128,16 +134,16 @@ void proposedStaticLB(int &state,
     cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
     cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
-    std::cout << "\n UE satisfaction as below : \n" ;
+    /*std::cout << "\n UE satisfaction as below : \n" ;
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         if(my_UE_list[UE_index].getGroup() == 1){ // urllc
-            UE_satisfaction[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2 * US_datarate[UE_index]);
+            UE_satisfaction[UE_index] = (0.4545 * US_reliability[UE_index]) + (0.4545 * US_latency[UE_index]) + (0.091 * US_datarate[UE_index]);
         }
         if(my_UE_list[UE_index].getGroup() == 2){ // normal
             UE_satisfaction[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
         }
         std::cout << UE_satisfaction[UE_index] << "\n";
-    }
+    }*/
 }
 
 void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
@@ -168,7 +174,7 @@ void cal_US_Latency(std::vector<double> &US_latency,
     /* Tw = waiting time in queue (maybe can calculate average waiting time?)*/
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         double TL = 0.1 + 0.3 ; // Ta + Tb = 0.1ms , Tr + Tp = 0.3ms
-        TL += packet_size / (1e6 * UE_final_data_rate_vector[UE_index]) * 1e-3;
+        TL += packet_size / (1e6 * UE_final_data_rate_vector[UE_index]) * 1e3;
         if( TL < T_max){
             US_latency[UE_index] = 1;
         }
@@ -190,4 +196,8 @@ double SINR_to_dB(double SINR){
 
 double dB_to_SINR(double dB){
     return std::pow(10.0,dB/10.0);
+}
+
+bool sort_by_sec(const std::pair<int,int> &a, const std::pair<int,int> &b){
+    return (a.second > b.second);
 }
