@@ -40,6 +40,8 @@ void printRFDataRateVector(std::vector<double> &RF_data_rate_vector);
 
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix);
 
+void printApAllocatePowerMatrix(std::vector<std::vector<double>> &AP_allocate_power);
+
 void printRfApPosition(ns3::NodeContainer &RF_AP_node);
 
 void printVlcApPosition(ns3::NodeContainer &VLC_AP_nodes);

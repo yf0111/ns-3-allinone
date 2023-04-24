@@ -65,7 +65,7 @@ void proposedStaticLB(int &state,
         }
     }
 
-    // step 2 (RA), wifi : devide equally , lifi : proportional distribution according to the required data rate
+    // step 2 (RA), wifi : proportional distribution according to the required data rate , lifi : proportional distribution according to the required data rate
     std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
     for(int i = 0 ; i < RF_AP_num + VLC_AP_num ; i++){
         int serve_ue_number = 0;
@@ -79,9 +79,12 @@ void proposedStaticLB(int &state,
         }
 
         for(int j = 0 ; j < UE_num ; j++){
-            if(i < RF_AP_num){ // RF , equally
-                if(local_AP_association_matrix[i][j] == 1){
+            if(i < RF_AP_num){ // RF , based on require data rate
+                /*if(local_AP_association_matrix[i][j] == 1){ // equally
                     AP_allocate_power[i][j] = 1.0 / serve_ue_number;
+                }*/
+                if(local_AP_association_matrix[i][j] == 1){
+                    AP_allocate_power[i][j] = UE_require_data_rate[j] / total_data_rate;
                 }
             }
             else{ // VLC , based on require data rate
@@ -93,6 +96,7 @@ void proposedStaticLB(int &state,
     }
 
 
+    // step 3 : calculate final UE data rate
     updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
     updateAllRFSINR(RF_SINR_vector,RF_channel_gain_vector,AP_allocate_power);
     updateAllVlcSINR(VLC_LOS_matrix,VLC_SINR_matrix,local_AP_association_matrix,AP_allocate_power);
@@ -100,7 +104,6 @@ void proposedStaticLB(int &state,
     calculateALLRFDataRate(RF_data_rate_vector,RF_SINR_vector);
     calculateAllVlcDataRate(VLC_SINR_matrix,VLC_data_rate_matrix);
 
-    // step 3 : calculate final UE data rate
     for(int i = 0 ; i < UE_num ; i++){
         UE_final_data_rate_vector[i] += RF_data_rate_vector[i];
         for(int j = 0 ; j < VLC_AP_num ; j++){
@@ -108,23 +111,55 @@ void proposedStaticLB(int &state,
         }
     }
 
-    // step 4 : Store normal device which not getting enough data rate and reallocate RF AP power
-    // *-----------------2023/03/24 TODO : reallocate RF AP power-------------------*
+    // step 3.5 : Store normal device which not getting enough data rate and urllc device witch getting too much data rate
+    std::vector<double> minimum_rf_allocate_percentage = std::vector<double> (UE_num,0.0);
+    cal_minumum_allocate_power_percentage(minimum_rf_allocate_percentage,UE_require_data_rate,RF_channel_gain_vector);
     std::vector<std::pair<int, double>> insufficient_normal_ue; // < ue index , require data rate - final data rate >
+    std::vector<std::pair<int,double>> excess_urllc_ue; // < ue index , final data rate - require data rate >
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         std::cout << "UE : " << UE_index << " ,require : " << UE_require_data_rate[UE_index] << " ,get : " << UE_final_data_rate_vector[UE_index] << "\n";
         if(my_UE_list[UE_index].getGroup() == 2 &&  UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
             insufficient_normal_ue.push_back(std::make_pair(UE_index , UE_require_data_rate[UE_index] - UE_final_data_rate_vector[UE_index]));
         }
+        if(my_UE_list[UE_index].getGroup() == 1 && UE_final_data_rate_vector[UE_index] - UE_require_data_rate[UE_index]){
+            excess_urllc_ue.push_back(std::make_pair(UE_index , UE_final_data_rate_vector[UE_index] - UE_require_data_rate[UE_index]));
+        }
     }
-    sort(insufficient_normal_ue.begin(), insufficient_normal_ue.end(), sort_by_sec); // descending order
-    std::cout << "size:" << insufficient_normal_ue.size() <<"\n";
-    while(!insufficient_normal_ue.empty()){ //while(insufficient_normal_ue不為空 且 有資源可以分 (是不是要計算如果滿足 urllc ue 的話要多少 power))
-        std::cout << "insufficient ue :" << insufficient_normal_ue[insufficient_normal_ue.size()-1].first << " , insufficient data rate :" << insufficient_normal_ue[insufficient_normal_ue.size()-1].second << "\n";
-        insufficient_normal_ue.pop_back();
-    }
+    sort(insufficient_normal_ue.begin(), insufficient_normal_ue.end(), sort_by_sec_descending); // descending order , big -> small
+    sort(excess_urllc_ue.begin(), excess_urllc_ue.end() , sort_by_sec_descending); // descending order , big -> small
 
 
+    // step 4 : Reallocate RF AP power
+    while(!insufficient_normal_ue.empty() && !excess_urllc_ue.empty()){ // while(insufficient_normal_ue is not empty and has resource to allocate)
+        // start with insufficient_normal_ue[insufficient_normal_ue.size()-1].first , (need minimum index)
+        // start with excess_urllc_ue[excess_urllc_ue.size()-1].first , (excess minimum index)
+        std::cout << "insufficient ue : " << insufficient_normal_ue[insufficient_normal_ue.size()-1].first << " , insufficient data rate :" << insufficient_normal_ue[insufficient_normal_ue.size()-1].second << "\n";
+        std::cout << "excess ue : " << excess_urllc_ue[excess_urllc_ue.size()-1].first << " , excess data rate :" << excess_urllc_ue[excess_urllc_ue.size()-1].second << "\n";
+        AP_allocate_power[0][insufficient_normal_ue[insufficient_normal_ue.size()-1].first] += AP_allocate_power[0][excess_urllc_ue[excess_urllc_ue.size()-1].first] - minimum_rf_allocate_percentage[excess_urllc_ue[excess_urllc_ue.size()-1].first];
+        AP_allocate_power[0][excess_urllc_ue[excess_urllc_ue.size()-1].first] = minimum_rf_allocate_percentage[excess_urllc_ue[excess_urllc_ue.size()-1].first];
+
+        UE_final_data_rate_vector = std::vector<double> (UE_num,0.0) ;
+        updateAllRFSINR(RF_SINR_vector,RF_channel_gain_vector,AP_allocate_power);
+        updateAllVlcSINR(VLC_LOS_matrix,VLC_SINR_matrix,local_AP_association_matrix,AP_allocate_power);
+        calculateALLRFDataRate(RF_data_rate_vector,RF_SINR_vector);
+        calculateAllVlcDataRate(VLC_SINR_matrix,VLC_data_rate_matrix);
+
+        for(int i = 0 ; i < UE_num ; i++){
+            UE_final_data_rate_vector[i] += RF_data_rate_vector[i];
+            for(int j = 0 ; j < VLC_AP_num ; j++){
+                UE_final_data_rate_vector[i] += VLC_data_rate_matrix[j][i];
+            }
+        }
+
+        if( UE_final_data_rate_vector[insufficient_normal_ue[insufficient_normal_ue.size()-1].first] > UE_require_data_rate[insufficient_normal_ue[insufficient_normal_ue.size()-1].first]){
+            insufficient_normal_ue.pop_back();
+        }
+        excess_urllc_ue.pop_back();
+    }
+
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        std::cout << "*UE : " << UE_index << " ,require : " << UE_require_data_rate[UE_index] << " ,get : " << UE_final_data_rate_vector[UE_index] << "\n";
+    }
 
     // step 5 : calculate user satisfaction
     std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
@@ -134,6 +169,7 @@ void proposedStaticLB(int &state,
     cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
     cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
+
     /*std::cout << "\n UE satisfaction as below : \n" ;
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         if(my_UE_list[UE_index].getGroup() == 1){ // urllc
@@ -144,6 +180,21 @@ void proposedStaticLB(int &state,
         }
         std::cout << UE_satisfaction[UE_index] << "\n";
     }*/
+}
+void reallocate_RF_power(std::vector<std::vector<double>> &AP_allocate_power,
+                         std::vector<double> &minimum_rf_allocate_percentage,
+                         std::vector<MyUeNode> &my_UE_list)
+{
+
+}
+
+void cal_minumum_allocate_power_percentage(std::vector<double> &minimum_rf_allocate_percentage,
+                                           std::vector<double> &UE_require_data_rate,
+                                           std::vector<double> &RF_channel_gain_vector){
+    for(int i = 0 ; i < UE_num ; i++){
+        double allocate = ((RF_noise_power_spectral_density * RF_AP_bandwidth) / (RF_AP_power * RF_channel_gain_vector[i])) * ( pow(2,(UE_require_data_rate[i]) / RF_AP_bandwidth) - 1 );
+        minimum_rf_allocate_percentage[i] = allocate;
+    }
 }
 
 void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
@@ -198,6 +249,10 @@ double dB_to_SINR(double dB){
     return std::pow(10.0,dB/10.0);
 }
 
-bool sort_by_sec(const std::pair<int,int> &a, const std::pair<int,int> &b){
+bool sort_by_sec_descending(const std::pair<int,double> &a, const std::pair<int,double> &b){
     return (a.second > b.second);
+}
+
+bool sort_by_sec_ascending(const std::pair<int,double> &a, const std::pair<int,double> &b){
+    return (a.second < b.second);
 }

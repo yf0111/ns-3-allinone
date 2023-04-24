@@ -35,11 +35,11 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
         else if( PROPOSED_METHOD ){
             if(i < urllc_UE_num){
                 required_data_rate = uniform_urllc(generator);
-                group = 1;
+                group = 1; // urllc device
             }
             else{
                 required_data_rate = uniform_normal(generator);
-                group = 2;
+                group = 2; // normal device
             }
         }
         else{

@@ -7,14 +7,6 @@
 #include "print.h"
 #include "global_configuration.h"
 #include "my_UE_node.h"
-/*
-    !*-*-NEW*-*-! 2023/01/10
-    printVlcLosMatrix
-    printVlcSinrMatrix
-    printVlcDataRateMatrix
-    printRFChannelGainVector
-    printRFSINRMatrix
-*/
 
 void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix){
     std::cout << "VLC LOS matrix as below: " << std::endl;
@@ -151,6 +143,21 @@ void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matr
     for (int i = 0; i < RF_AP_num + VLC_AP_num; i++) {
         for (int j = 0; j < UE_num; j++) {
             std::cout << AP_association_matrix[i][j] << " ";
+        }
+
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+}
+
+void printApAllocatePowerMatrix(std::vector<std::vector<double>> &AP_allocate_power){
+
+    std::cout << "AP allocate Power matrix as below: " << std::endl;
+
+    for (int i = 0; i < RF_AP_num + VLC_AP_num; i++) {
+        for (int j = 0; j < UE_num; j++) {
+            std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(5) << AP_allocate_power[i][j]<<" ";
         }
 
         std::cout << std::endl;
