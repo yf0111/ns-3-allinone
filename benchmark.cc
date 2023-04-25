@@ -44,7 +44,6 @@ void benchmarkMethod(int &state,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
-                     std::multimap<std::vector<double>,int> &policy_map,
                      std::vector<double> &UE_final_satisfaction_vector)
 {
     precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
@@ -64,13 +63,6 @@ void benchmarkMethod(int &state,
     */
     LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
 #endif // LAEQOS
-
-#if RLLB
-    /*
-        ref'1 , RLLB
-    */
-    RL_LB(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,my_UE_list,VLC_data_rate_matrix,RF_data_rate_vector,policy_map,UE_final_data_rate_vector,UE_final_satisfaction_vector);
-#endif // RLLB
 
 }
 

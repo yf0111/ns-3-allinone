@@ -20,7 +20,6 @@ void benchmarkMethod(int &state,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
-                     std::multimap<std::vector<double>,int> &policy_map,
                      std::vector<double> &UE_final_satisfaction_vector);
 
 void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,

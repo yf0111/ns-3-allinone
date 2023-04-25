@@ -37,23 +37,6 @@ void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     std::cout << std::endl;
 }
 
-/*void printVlcSinrMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_SINR_matrix_3d){
-    std::cout << "VLC SINR matrix as below: " << std::endl;
-    for (int i = 0; i < VLC_AP_num; i++) {
-        std::cout << "For VLC AP " << i << ": \n";
-        for(int k = 0;k <= effective_VLC_subchannel ; k++){
-            std::cout << "  For sub channel " << k << ": \n";
-            std::cout << "  ";
-            for(int j = 0 ; j < UE_num ; j++){
-                std::cout << VLC_SINR_matrix_3d[i][k][j] << "\t";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
-
 void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matrix){
     std::cout << "VLC data rate matrix as below: " << std::endl;
     for (int i = 0; i < VLC_AP_num; i++) {
@@ -67,23 +50,6 @@ void printVlcDataRateMatrix(std::vector<std::vector<double>> &VLC_data_rate_matr
     }
     std::cout << std::endl;
 }
-
-/*void printVlcDataRateMatrix3d(std::vector<std::vector<std::vector<double>>> &VLC_data_rate_matrix_3d){
-    std::cout << "VLC data rate matrix as below: " << std::endl;
-    for (int i = 0; i < VLC_AP_num; i++) {
-        std::cout << "For VLC AP " << i << ": \n";
-        for(int k = 0 ; k <= effective_VLC_subchannel ; k++){
-            std::cout << "  For sub channel " << k << ": \n";
-            std::cout << "  ";
-            for(int j = 0 ; j < UE_num ; j++){
-                std::cout << VLC_data_rate_matrix_3d[i][k][j] << "\t";
-            }
-            std::cout<<std::endl;
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
 
 void printRFChannelGainVector(std::vector<double> &RF_channel_gain_vector){
     std::cout << "RF Channel Gain vector as below: " << std::endl;
@@ -101,19 +67,6 @@ void printRFSINRVector(std::vector<double> &RF_SINR_vector){
     std::cout << std::endl;
 }
 
-/*void printRFSINRVector2d(std::vector<std::vector<double>> &RF_SINR_vector_2d){
-    std::cout << "RF SINR matrix as below: " << std::endl;
-    for (int i = 0; i <= effective_RF_subchannel; i++) {
-        std::cout << "For sub channel " << i << ": \n";
-        std::cout << "  ";
-        for (int j = 0; j < UE_num; j++) {
-            std::cout << RF_SINR_vector_2d[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
-
 void printRFDataRateVector(std::vector<double> &RF_data_rate_vector){
     std::cout << "RF Data Rate vector as below: " << std::endl;
     for(int i = 0 ; i<UE_num;i++){
@@ -122,19 +75,6 @@ void printRFDataRateVector(std::vector<double> &RF_data_rate_vector){
     }
     std::cout << std::endl;
 }
-
-/*void printRFDataRateVector2d(std::vector<std::vector<double>> &RF_data_rate_vector_2d){
-    std::cout << "RF data rate matrix as below: " << std::endl;
-    for (int i = 0; i <= effective_RF_subchannel; i++) {
-        std::cout << "For sub channel " << i << ": \n";
-        std::cout << "  ";
-        for (int j = 0; j < UE_num; j++) {
-            std::cout << RF_data_rate_vector_2d[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
 
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix){
 
@@ -275,37 +215,3 @@ void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
     std::cout<<std::endl;
 }
 
-/*void printResourceUnitMatrix(std::vector<std::vector<std::vector<int>>> &resource_unit_matrix, int VLC_AP_index) {
-    std::cout << "RU Matrix of VLC AP " << VLC_AP_index << " as below: " << std::endl;
-
-    for (int i = 0; i < resource_unit_matrix[VLC_AP_index].size(); i++) {
-        for (int j = 0; j < resource_unit_matrix[VLC_AP_index][i].size(); j++) {
-            std::cout << std::setw(4) << resource_unit_matrix[VLC_AP_index][i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
-
-/*void printResourceUnitMatrix(std::vector<std::vector<int>> &RU_matrix) {
-    std::cout << "RU Matrix: " << std::endl;
-
-    for (int i = 0; i < RU_matrix.size(); i++) {
-        for (int j = 0; j < RU_matrix[i].size(); j++) {
-            std::cout << std::setw(4) << RU_matrix[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}*/
-
-/*void printBlockedUE(std::vector<int> &blocked_UE) {
-    std::cout << "Blocked UE as below: " << std::endl;
-
-    std::sort(blocked_UE.begin(), blocked_UE.end());
-
-    for (int i = 0; i < blocked_UE.size(); i++)
-        std::cout << blocked_UE[i] << " ";
-
-    std::cout << std::endl;
-}*/

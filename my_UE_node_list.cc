@@ -26,10 +26,7 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
         double required_data_rate = 0.0;
         int group = 0;
 
-        if(RLLB && !LASINR && !LAEQOS){
-            required_data_rate = distribution_benchmark(generator);
-        }
-        else if ((LASINR || LAEQOS) && !RLLB){
+        if ((LASINR || LAEQOS) && !PROPOSED_METHOD){
             required_data_rate = require_data_rate_threshold;
         }
         else if( PROPOSED_METHOD ){

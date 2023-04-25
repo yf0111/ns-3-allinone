@@ -75,10 +75,7 @@ std::vector<std::vector<int>> AP_association_matrix(RF_AP_num + VLC_AP_num, std:
 */
 std::vector<std::vector<double>> VLC_LOS_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0));
 std::vector<std::vector<double>> VLC_SINR_matrix(VLC_AP_num, std::vector<double> (UE_num ,0.0)); // in dB
-//std::vector<std::vector<std::vector<double>>> VLC_SINR_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
 std::vector<std::vector<double>> VLC_data_rate_matrix(VLC_AP_num, std::vector<double> (UE_num, 0.0)); // in Mbps
-//std::vector<std::vector<std::vector<double>>> VLC_data_rate_matrix_3d (VLC_AP_num, std::vector<std::vector<double>> (VLC_AP_subchannel, std::vector<double> (UE_num, 0.0)));
-//std::vector<std::vector<std::vector<double>>> VLC_allocated_power_3d(VLC_AP_num,std::vector<std::vector<double>>(VLC_AP_subchannel,std::vector<double>(UE_num,0.0)));
 
 /*
     RF
@@ -86,10 +83,13 @@ std::vector<std::vector<double>> VLC_data_rate_matrix(VLC_AP_num, std::vector<do
 std::vector<double> RF_channel_gain_vector(UE_num, 0.0);
 std::vector<double> RF_SINR_vector(UE_num, 0.0);
 std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
-//std::vector<std::vector<double>> RF_SINR_vector_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
-//std::vector<std::vector<double>> RF_data_rate_vector_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
-//std::vector<std::vector<double>> RF_allocated_power_2d(RF_AP_subchannel,std::vector<double>(UE_num,0.0));
-//std::vector<double> RF_ICI_channel_gain_vector(UE_num,0.0);
+
+/*
+    UE
+*/
+std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
+std::vector<double> UE_require_data_rate(UE_num , 0.0);
+std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
 
 /*
     performance evaluation
@@ -97,20 +97,6 @@ std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
 std::vector<double> recorded_average_outage_probability(state_num,0.0); // UE average outage probability
 std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average data rate
 std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction
-
-/*
-    !*-*-NEW*-*-!
-    ref'2 : for reference 2
-*/
-std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
-
-/*
-    !*-*-NEW*-*-!
-    ref'1 : for reference 1
-*/
-std::multimap<std::vector<double>,int> policy_map; // ((SAP/LA , x position , y position) , AP association)
-std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
-
 
 
 static const uint32_t totalTxBytes = 10000000;
@@ -166,10 +152,9 @@ static void initialize() {
     RF_SINR_vector = std::vector<double> (UE_num,0.0);
     RF_data_rate_vector = std::vector<double> (UE_num, 0.0); // in Mbps
 
-    policy_map.clear();
-
     UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
     UE_final_satisfaction_vector = std::vector<double>(UE_num,0.0);
+    UE_require_data_rate = std::vector<double>(UE_num,0.0);
 
     recorded_average_outage_probability = std::vector<double>(state_num,0.0);
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
@@ -208,14 +193,14 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     proposedStaticLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                         AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
-                        policy_map,UE_final_satisfaction_vector);
+                        UE_final_satisfaction_vector);
 #endif
 
 
@@ -224,7 +209,10 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     // UE average outage probability
     int outage_UE_number = 0;
     for(int i = 0 ; i < UE_num ; i++){
-        if(UE_final_data_rate_vector[i] < require_data_rate_threshold){
+        double thre = 0;
+        if (LASINR || LAEQOS && !PROPOSED_METHOD) thre = require_data_rate_threshold;
+        if (PROPOSED_METHOD && !LASINR && !LAEQOS) thre = UE_require_data_rate[i];
+        if(UE_final_data_rate_vector[i] < thre){
             outage_UE_number += 1;
         }
     }
@@ -245,9 +233,8 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     recorded_average_satisfaction[state] = (double) total_UE_satis / UE_num;
 
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
-    std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl;
-    std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl<<std::endl;
-
+    std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl;
+    std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl<<std::endl;
 
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
@@ -310,55 +297,28 @@ int main(int argc, char *argv[])
 
     // overall avg. outage probability
     double avg_outage_probability = 0.0;
-    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
-        // record last 20% results
-        for(int i = 0 ; i < 20.0 / 100.0 * state_num ; i++){
-            avg_outage_probability += recorded_average_outage_probability[i + 80.0 / 100.0 * state_num];
-        }
-        avg_outage_probability = avg_outage_probability / (10.0 / 100.0 * state_num);
+    for(int i = 0 ; i < state_num ; i++){
+        avg_outage_probability += recorded_average_outage_probability[i];
     }
-    else if(!RLLB && (LASINR || LAEQOS || PROPOSED_METHOD)){
-        for(int i = 0 ; i < state_num ; i++){
-            avg_outage_probability += recorded_average_outage_probability[i];
-        }
-        avg_outage_probability = avg_outage_probability / state_num;
-    }
-    else{
-        std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
-    }
+    avg_outage_probability = avg_outage_probability / state_num;
 
     // overall avg. satisfaction
     double avg_satisfaction = 0.0;
-    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
-        // record last 10% results
-        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
-            avg_satisfaction += std::min(recorded_average_satisfaction[i + 90.0 / 100.0 * state_num],1.0);
-        }
-        avg_satisfaction = avg_satisfaction / (10.0 / 100.0 * state_num);
-        std::cout << "overall avg satisfaction: "<< avg_satisfaction << std::endl;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_satisfaction += recorded_average_satisfaction[i];
     }
+    avg_satisfaction = avg_satisfaction / state_num;
 
     // overall avg. data rate
     double avg_data_rate = 0.0;
-    if(RLLB && !LASINR && !LAEQOS && !PROPOSED_METHOD){
-        // record last 10% results
-        for(int i = 0 ; i < 10.0 / 100.0 * state_num ; i++){
-            avg_data_rate += recorded_average_data_rate[i + 90.0 / 100.0 * state_num];
-        }
-        avg_data_rate = avg_data_rate / (10.0 / 100.0 * state_num);
+    for(int i = 0 ; i < state_num ; i++){
+        avg_data_rate += recorded_average_data_rate[i];
     }
-    else if(!RLLB && (LASINR || LAEQOS || PROPOSED_METHOD)){
-        for(int i = 0 ; i < state_num ; i++){
-            avg_data_rate += recorded_average_data_rate[i];
-        }
-        avg_data_rate = avg_data_rate / state_num;
-    }
-    else{
-        std::cout<<"**(thesis.cc) global configuration about method is WRONG!**\n";
-    }
+    avg_data_rate = avg_data_rate / state_num;
 
 
     std::cout << "overall avg outage: "<< avg_outage_probability << std::endl;
+    std::cout << "overall avg satisfaction: "<<avg_satisfaction << std::endl;
     std::cout << "overall avg data rate: "<< avg_data_rate << std::endl<<std::endl;
 
     // calculate the actual executing time
@@ -373,9 +333,6 @@ int main(int argc, char *argv[])
     else{
         if(LASINR){
             method = "benchmark-LASINR";
-        }
-        else if(RLLB){
-            method = "benchmark-RLLB";
         }
         else{
             method = "benchmark-LAEQOS";
@@ -400,7 +357,7 @@ int main(int argc, char *argv[])
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);
     }
-    else if(RLLB){
+    else if(PROPOSED_METHOD){
         output << avg_outage_probability << "," << avg_satisfaction << "," << avg_data_rate;
         output << std::endl;
     }

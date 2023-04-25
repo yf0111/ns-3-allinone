@@ -21,11 +21,9 @@ void proposedStaticLB(int &state,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
-                     std::vector<double> &UE_final_data_rate_vector);
-
-void reallocate_RF_power(std::vector<std::vector<double>> &AP_allocate_power,
-                         std::vector<double> &minimum_rf_allocate_percentage,
-                         std::vector<MyUeNode> &my_UE_list);
+                     std::vector<double> &UE_final_data_rate_vector,
+                     std::vector<double> &UE_final_satisfaction_vector,
+                     std::vector<double> &UE_require_data_rate);
 
 void cal_minumum_allocate_power_percentage(std::vector<double> &minimum_rf_allocate_percentage,
                                            std::vector<double> &UE_require_data_rate,
@@ -49,4 +47,6 @@ double dB_to_SINR(double dB);
 bool sort_by_sec_descending(const std::pair<int,double> &a, const std::pair<int,double> &b);
 
 bool sort_by_sec_ascending(const std::pair<int,double> &a, const std::pair<int,double> &b);
+
+double roundNumber(double oriNum, int bits);
 #endif // PROPOSED_METHOD_H

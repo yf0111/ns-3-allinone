@@ -102,29 +102,23 @@ void installUeMobility(NodeContainer &UE_nodes) {
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
     UE_mobility.SetPositionAllocator(position_allocator);
 
+    /* static environment */
+    UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 
 
-    if(RLLB){
-        /* dynamic environment */
+    /* dynamic environment */
+    /*// - the random variable for user speed
+    std::stringstream ss_speed;
+    ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
 
-        // - the random variable for user speed
-        std::stringstream ss_speed;
-        ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
+    // - the random variable for pause time
+    std::stringstream ss_pause;
+    ss_pause << "ns3::UniformRandomVariable[Min=0.0|Max=" << pause_time << "]";
 
-        // - the random variable for pause time
-        std::stringstream ss_pause;
-        ss_pause << "ns3::UniformRandomVariable[Min=0.0|Max=" << pause_time << "]";
-
-        UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
-                                  "Speed", StringValue(ss_speed.str()),
-                                  "Pause", StringValue(ss_pause.str()),
-                                  "PositionAllocator", PointerValue(position_allocator));
-
-    }
-    else{
-        /* static environment */
-        UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-    }
+    UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
+                              "Speed", StringValue(ss_speed.str()),
+                              "Pause", StringValue(ss_pause.str()),
+                              "PositionAllocator", PointerValue(position_allocator));*/
 
     UE_mobility.Install(UE_nodes);
 }

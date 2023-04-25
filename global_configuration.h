@@ -7,7 +7,7 @@
 /*
 
 2023/01/05 : //* means liu_code exist
-    /ref'1/ means that this func.(var.) is used for reference : Reinforcement Learning-Based Near-Optimal Load Balancing for Heterogeneous LiFi WiFi Network
+    /ref'1/ means that this func.(var.) is used for reference : Reinforcement Learning-Based Near-Optimal Load Balancing for Heterogeneous LiFi WiFi Network (also proposed)
     /ref'2/ means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi WiFi network using a novel Link Aggregation Framework
 */
 
@@ -15,14 +15,13 @@
 #define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
-#define RLLB 0
 
 
 const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 1; // @-ref'1- 100@ , @-ref'2- 1@
+const int state_num = 1; // @-ref'2- 1@
 
 
 /*  RF AP  */

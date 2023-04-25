@@ -27,7 +27,6 @@ void precalculation(NodeContainer &RF_AP_node ,
 /* VLC Line of sight */
 double calculateAllVlcLightOfSight(NodeContainer &VLC_AP_nodes, NodeContainer &UE_nodes, std::vector<MyUeNode> &my_UE_list, std::vector<std::vector<double>> &VLC_LOS_matrix);
 double estimateOneVlcLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node);
-double estimateOneVlcNonLightOfSight(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node);
 double getIrradianceAngle(Ptr<Node> AP, MyUeNode & UE_node); // in radians
 double getCosineOfIncidenceAngle(Ptr<Node> VLC_AP, Ptr<Node> UE, MyUeNode &UE_node);
 double radian2Degree(const double &radian);
