@@ -182,15 +182,15 @@ static void updateToNextState(NodeContainer &RF_AP_node,
                        std::vector<MyUeNode> &my_UE_list)
 {
 #if DEBUG_MODE
-
     std::cout << "state : " << state << "\n";
     printUePosition(UE_nodes);
+    printUEVelocity(UE_nodes);
 #endif
 
 
 #if PROPOSED_METHOD
 
-    proposedStaticLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
+    proposedLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                         AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
@@ -238,7 +238,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
-
     state++;
 }
 
@@ -274,6 +273,8 @@ int main(int argc, char *argv[])
 #if DEBUG_MODE
     printUePosition(UE_nodes);
 #endif
+
+
     std::vector<MyUeNode> my_UE_list = initializeMyUeNodeList(UE_nodes);
 
     // start time
@@ -365,7 +366,6 @@ int main(int argc, char *argv[])
         output << avg_outage_probability << "," << avg_data_rate;
         output << std::endl;
     }
-
     output.close();
     Simulator::Destroy();
 }

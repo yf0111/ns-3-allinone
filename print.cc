@@ -165,6 +165,16 @@ void printUePosition(ns3::NodeContainer &UE_nodes) {
     std::cout << std::endl;
 }
 
+void printUEVelocity(ns3::NodeContainer &UE_nodes){
+    int UE_index = 0;
+    for (NodeContainer::Iterator it = UE_nodes.Begin(); it != UE_nodes.End(); ++it) {
+        Ptr<MobilityModel> UE_mobility_model = (*it)->GetObject<MobilityModel>();
+        Vector speed = UE_mobility_model->GetVelocity();
+        std::cout << "Velocity of UE " << UE_index++ << " =(" << speed.x << ", " << speed.y << ", " << speed.z << ")" << std::endl;
+    }
+    std::cout << std::endl;
+}
+
 void printUePosition(std::vector<MyUeNode> &my_UE_list) {
     std::fstream output;
     output.open("/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/UE_position.csv", std::ios::out | std::ios::trunc);

@@ -9,7 +9,7 @@
 #include "ns3/mobility-module.h"
 
 
-void proposedStaticLB(int &state,
+void proposedLB(int &state,
                      NodeContainer &RF_AP_node,
                      NodeContainer &VLC_AP_nodes,
                      NodeContainer &UE_nodes,
@@ -24,6 +24,12 @@ void proposedStaticLB(int &state,
                      std::vector<double> &UE_final_data_rate_vector,
                      std::vector<double> &UE_final_satisfaction_vector,
                      std::vector<double> &UE_require_data_rate);
+
+void reConfigure_APS(std::vector<double> &RF_SINR_vector,
+                     std::vector<std::vector<double>> &VLC_SINR_matrix,
+                     std::vector<double> &final_data_rate,
+                     std::vector<double> &require_data_rate,
+                     std::vector<std::vector<int>> &AP_association_matrix);
 
 void cal_minumum_allocate_power_percentage(std::vector<double> &minimum_rf_allocate_percentage,
                                            std::vector<double> &UE_require_data_rate,

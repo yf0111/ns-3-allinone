@@ -18,7 +18,7 @@
 #include "global_configuration.h"
 
 
-void proposedStaticLB(int &state,
+void proposedLB(int &state,
                      NodeContainer &RF_AP_node,
                      NodeContainer &VLC_AP_nodes,
                      NodeContainer &UE_nodes,
@@ -66,6 +66,20 @@ void proposedStaticLB(int &state,
             local_AP_association_matrix[max_AP_index][UE_index] = 1;
         }
     }
+    std::vector<int> AP_serve_number = AP_association_matrix_to_UE_numbers(local_AP_association_matrix);
+    std::string path = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+    std::fstream output;
+    output.open(path + "AP_load_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    if (!output.is_open()) {
+        std::cout << "Fail to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        output << AP_serve_number[0] << "," << AP_serve_number[1] << "," << AP_serve_number[2] << "," << AP_serve_number[3] << "," << AP_serve_number[4];
+        output << std::endl;
+    }
+    output.close();
+
 
     // step 2 (RA), wifi : proportional distribution according to the required data rate , lifi : proportional distribution according to the required data rate
     std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
@@ -180,14 +194,26 @@ void proposedStaticLB(int &state,
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         // satisfaction先用大家都一樣去跑，但是老師覺得不同UE有不同線性組合是合理的，先用1:1:0.2跑跑看，之後再決定normal device要換多少
 
-        /*if(my_UE_list[UE_index].getGroup() == 1){ // urllc
-            UE_satisfaction[UE_index] = (0.4545 * US_reliability[UE_index]) + (0.4545 * US_latency[UE_index]) + (0.091 * US_datarate[UE_index]);
+        if(my_UE_list[UE_index].getGroup() == 1){ // urllc
+            UE_final_satisfaction_vector[UE_index] = (0.454545455 * US_reliability[UE_index]) + (0.454545455 * US_latency[UE_index]) + (0.09090909 * US_datarate[UE_index]); // 1:1:0.2
         }
         if(my_UE_list[UE_index].getGroup() == 2){ // normal
-            UE_satisfaction[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
-        }*/
-        UE_final_satisfaction_vector[UE_index] = (0.454545455 * US_reliability[UE_index]) + (0.454545455 * US_latency[UE_index]) + (0.09090909 * US_datarate[UE_index]); // 1:1:0.2
+            UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]); // 1:1:8
+        }
+        //UE_final_satisfaction_vector[UE_index] = (0.454545455 * US_reliability[UE_index]) + (0.454545455 * US_latency[UE_index]) + (0.09090909 * US_datarate[UE_index]); // 1:1:0.2
+
     }
+
+
+}
+void reConfigure_APS(std::vector<double> &RF_SINR_vector,
+                     std::vector<std::vector<double>> &VLC_SINR_matrix,
+                     std::vector<double> &final_data_rate,
+                     std::vector<double> &require_data_rate,
+                     std::vector<std::vector<int>> &AP_association_matrix){
+
+    std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+
 }
 
 void cal_minumum_allocate_power_percentage(std::vector<double> &minimum_rf_allocate_percentage,
@@ -224,7 +250,7 @@ void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
 void cal_US_Latency(std::vector<double> &US_latency,
                     std::vector<double> &UE_final_data_rate_vector){
     /* TL = Tt + Ta + Tb + Tr + Tp , (TL < Tmax (1ms))? 1:0 */
-    /* Tw = waiting time in queue (maybe can calculate average waiting time?)*/
+    /* Tw = waiting time in queue -> can ignore */
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         double TL = 0.1 + 0.3 ; // Ta + Tb = 0.1ms , Tr + Tp = 0.3ms
         TL += packet_size / (1e6 * UE_final_data_rate_vector[UE_index]) * 1e3;

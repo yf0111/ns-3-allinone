@@ -103,11 +103,11 @@ void installUeMobility(NodeContainer &UE_nodes) {
     UE_mobility.SetPositionAllocator(position_allocator);
 
     /* static environment */
-    UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    //UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 
 
     /* dynamic environment */
-    /*// - the random variable for user speed
+    // - the random variable for user speed
     std::stringstream ss_speed;
     ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
 
@@ -118,7 +118,7 @@ void installUeMobility(NodeContainer &UE_nodes) {
     UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
                               "Speed", StringValue(ss_speed.str()),
                               "Pause", StringValue(ss_pause.str()),
-                              "PositionAllocator", PointerValue(position_allocator));*/
+                              "PositionAllocator", PointerValue(position_allocator));
 
     UE_mobility.Install(UE_nodes);
 }

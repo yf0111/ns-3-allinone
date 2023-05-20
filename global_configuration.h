@@ -59,7 +59,7 @@ const double conversion_efficiency = 0.53; // A/W // optical to electrical conve
 
 
 /*  UE  */
-const int UE_num = 20;
+const int UE_num = 15;
 const double UE_height = 1; // m // @-ref'1- 1@ , @-ref'2- 0@
 const double avg_speed = 1.0; // m/s
 const double pause_time = 10.0;

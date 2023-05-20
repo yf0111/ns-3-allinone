@@ -28,6 +28,8 @@ void printVlcApPosition(ns3::NodeContainer &VLC_AP_nodes);
 
 void printUePosition(ns3::NodeContainer &UE_nodes);
 
+void printUEVelocity(ns3::NodeContainer &VLC_AP_nodes);
+
 void printUePosition(std::vector<MyUeNode> &my_UE_list);
 
 void printMyUeList(std::vector<MyUeNode> &my_UE_list);

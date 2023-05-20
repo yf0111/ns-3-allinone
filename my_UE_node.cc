@@ -181,22 +181,6 @@ void MyUeNode::randomOrientationAngle(Ptr<Node> UE) {
 }
 
 
-// RU block : vector
-// RuRangeType : std::pair<std::pair<int,int>, std::pair<int,int>> ( <start,end> )
-
-/*
-    2023/01/09 : benchmark resource allocation is sub channel? -> turn Resource Unit into sub channel
-    sub channel : vector
-    typedef std::pair<int,int> RuType; // <sub channel index , time>
-
-    2023/01/10 : !*-*-NOTICE*-*-! NEED change about Resource Unit
-        Improving the performance of Heterogeneous LiFi-WiFi network using a novel Link Aggregation Framework : using TDMA
-        Learning-Based Energy-Efficient Resource Management by Heterogeneous RF/VLC for Ultra-Reliable Low-Latency Industrial IoT Networks L using OFDMA
-*/
-
-
-
-
 
 
 
