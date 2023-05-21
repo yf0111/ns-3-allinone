@@ -180,8 +180,13 @@ void MyUeNode::randomOrientationAngle(Ptr<Node> UE) {
     }
 }
 
+double MyUeNode::getVelocity(void){
+    return velocity;
+}
 
-
+void MyUeNode::setVelocity(double new_velocity){
+    velocity = new_velocity;
+}
 
 
 

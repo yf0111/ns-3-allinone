@@ -11,7 +11,7 @@
     /ref'2/ means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi WiFi network using a novel Link Aggregation Framework
 */
 
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
@@ -21,7 +21,7 @@ const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 1; // @-ref'2- 1@
+const int state_num = 15; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 1000 ]
 
 
 /*  RF AP  */
@@ -59,7 +59,7 @@ const double conversion_efficiency = 0.53; // A/W // optical to electrical conve
 
 
 /*  UE  */
-const int UE_num = 15;
+const int UE_num = 10;
 const double UE_height = 1; // m // @-ref'1- 1@ , @-ref'2- 0@
 const double avg_speed = 1.0; // m/s
 const double pause_time = 10.0;

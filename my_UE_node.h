@@ -48,6 +48,9 @@ public:
     double getAzimuthAngle(void);
     void randomOrientationAngle(Ptr<Node> UE);
 
+    double getVelocity(void);
+    void setVelocity(double new_velocity);
+
 private:
     int node_ID;
     Vector pos;
@@ -72,6 +75,8 @@ private:
 
     void setPolarAngle(double new_polar_angle);
     void setAzimuthAngle(double new_azimuth_angle);
+
+    double velocity;
 };
 
 

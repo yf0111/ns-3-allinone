@@ -25,7 +25,29 @@ void proposedLB(int &state,
                      std::vector<double> &UE_final_satisfaction_vector,
                      std::vector<double> &UE_require_data_rate);
 
-void reConfigure_APS(std::vector<double> &RF_SINR_vector,
+void RA(std::vector<std::vector<double>> &AP_allocate_power,
+        std::vector<std::vector<int>> &local_AP_association_matrix,
+        std::vector<double> &UE_require_data_rate);
+
+void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
+         std::vector<std::vector<int>> &AP_association_matrix,
+         std::vector<MyUeNode> &my_UE_list,
+         NodeContainer &UE_nodes);
+
+void re_configureRA(std::vector<double> &minimum_rf_allocate_percentage,
+                    std::vector<double> &UE_require_data_rate,
+                    std::vector<double> &UE_final_data_rate_vector,
+                    std::vector<std::vector<double>> &VLC_LOS_matrix,
+                    std::vector<std::vector<double>> &VLC_SINR_matrix,
+                    std::vector<std::vector<double>> &VLC_data_rate_matrix,
+                    std::vector<double> &RF_channel_gain_vector,
+                    std::vector<double> &RF_SINR_vector,
+                    std::vector<double> &RF_data_rate_vector,
+                    std::vector<MyUeNode> &my_UE_list,
+                    std::vector<std::vector<int>> &local_AP_association_matrix,
+                    std::vector<std::vector<double>> &AP_allocate_power);
+
+void re_configureAPS(std::vector<double> &RF_SINR_vector,
                      std::vector<std::vector<double>> &VLC_SINR_matrix,
                      std::vector<double> &final_data_rate,
                      std::vector<double> &require_data_rate,
