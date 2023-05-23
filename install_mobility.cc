@@ -86,7 +86,8 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
 void installUeMobility(NodeContainer &UE_nodes) {
     SeedManager::SetSeed(time(NULL));
 
-    MobilityHelper UE_mobility;
+    MobilityHelper UE_mobility_static;
+    MobilityHelper UE_mobility_dynamic;
 
     // set 3D position allocator for random waypoints
     ObjectFactory pos;
@@ -100,13 +101,17 @@ void installUeMobility(NodeContainer &UE_nodes) {
     pos.Set("Y", StringValue(ssPos.str()));
     pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
-    UE_mobility.SetPositionAllocator(position_allocator);
+    UE_mobility_static.SetPositionAllocator(position_allocator);
+    UE_mobility_dynamic.SetPositionAllocator(position_allocator);
 
     /* static environment */
-    //UE_mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    UE_mobility_static.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    //UE_mobility_static.Install(UE_nodes);
+
 
 
     /* dynamic environment */
+
     // - the random variable for user speed
     std::stringstream ss_speed;
     ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
@@ -115,12 +120,32 @@ void installUeMobility(NodeContainer &UE_nodes) {
     std::stringstream ss_pause;
     ss_pause << "ns3::UniformRandomVariable[Min=0.0|Max=" << pause_time << "]";
 
-    UE_mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
+    UE_mobility_dynamic.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
                               "Speed", StringValue(ss_speed.str()),
                               "Pause", StringValue(ss_pause.str()),
                               "PositionAllocator", PointerValue(position_allocator));
+    //UE_mobility_dynamic.Install(UE_nodes);
 
-    UE_mobility.Install(UE_nodes);
+
+
+    if(PROPOSED_METHOD){
+        int i = 0;
+        for (NodeContainer::Iterator it = UE_nodes.Begin(); it != UE_nodes.End(); ++it) {
+            if(i < urllc_UE_num){
+                UE_mobility_static.Install((*it));
+                std::cout << "static \n" ;
+            }
+            else{
+                UE_mobility_dynamic.Install((*it));
+                std::cout << "dynamic \n" ;
+            }
+            i++;
+        }
+    }
+    else{
+        UE_mobility_static.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+        UE_mobility_static.Install(UE_nodes);
+    }
 }
 
 

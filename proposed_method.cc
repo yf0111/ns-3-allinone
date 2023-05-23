@@ -51,15 +51,15 @@ void proposedLB(int &state,
     std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
     std::vector<double> minimum_rf_allocate_percentage = std::vector<double> (UE_num,0.0);
 
-    if(state % 10 == 0){
+    /*if(state % 10 == 0){
         AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
         local_AP_association_matrix = AP_association_matrix;
-        /* step 1 (APS) */
+        // step 1 (APS)
         APS(VLC_SINR_matrix,local_AP_association_matrix,my_UE_list,UE_nodes);
         AP_association_matrix = local_AP_association_matrix;
-        /* step 2 (RA) */
+        // step 2 (RA)
         RA(AP_allocate_power,local_AP_association_matrix,UE_require_data_rate);
-        /* step 2.5 : calculate final UE data rate */
+        // step 2.5 : calculate final UE data rate
         updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
         updateAllRFSINR(RF_SINR_vector,RF_channel_gain_vector,AP_allocate_power);
         updateAllVlcSINR(VLC_LOS_matrix,VLC_SINR_matrix,local_AP_association_matrix,AP_allocate_power);
@@ -74,14 +74,14 @@ void proposedLB(int &state,
                 UE_final_data_rate_vector[i] += roundNumber(VLC_data_rate_matrix[j][i],3);
             }
         }
-        /* step 3 (re RA ) */
+        // step 3 (re RA )
         re_configureRA(minimum_rf_allocate_percentage,UE_require_data_rate,UE_final_data_rate_vector,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,my_UE_list,local_AP_association_matrix,AP_allocate_power);
     }
     else{
-        /* (re RA ) */
+        // (re RA )
         re_configureRA(minimum_rf_allocate_percentage,UE_require_data_rate,UE_final_data_rate_vector,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,my_UE_list,local_AP_association_matrix,AP_allocate_power);
 
-    }
+    }*/
 
     /* step 5 : calculate user satisfaction */
     std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
@@ -100,6 +100,7 @@ void proposedLB(int &state,
 
 
 }
+
 
 void RA(std::vector<std::vector<double>> &AP_allocate_power,
         std::vector<std::vector<int>> &local_AP_association_matrix,
@@ -219,7 +220,7 @@ void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
     output.close();
 }
 
-void re_configureAPS(std::vector<double> &RF_SINR_vector,
+void RAPS(std::vector<double> &RF_SINR_vector,
                      std::vector<std::vector<double>> &VLC_SINR_matrix,
                      std::vector<double> &final_data_rate,
                      std::vector<double> &require_data_rate,
@@ -230,7 +231,7 @@ void re_configureAPS(std::vector<double> &RF_SINR_vector,
 
 }
 
-void re_configureRA(std::vector<double> &minimum_rf_allocate_percentage,
+void RRA(std::vector<double> &minimum_rf_allocate_percentage,
                     std::vector<double> &UE_require_data_rate,
                     std::vector<double> &UE_final_data_rate_vector,
                     std::vector<std::vector<double>> &VLC_LOS_matrix,
