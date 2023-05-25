@@ -122,7 +122,7 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node) {
 }
 
 
-/*  VLC SINR  */
+/*  VLC SINR & IINR */
 void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix){
     VLC_SINR_matrix = std::vector<std::vector<double>> (VLC_AP_num, std::vector<double>(UE_num,0.0));
 
@@ -175,6 +175,56 @@ double estimateUpdateVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,in
     double noise = VLC_AP_bandwidth * VLC_noise_power_spectral_density;
     double SINR = std::pow(conversion_efficiency * (VLC_AP_power * AP_power_allocation[VLC_AP_index+1][UE_index]) * VLC_LOS_matrix[VLC_AP_index][UE_index],2) / (interference + noise);
     return SINR;
+}
+void cal_All_VLC_IINR_SINR(std::vector<std::vector<double>> &VLC_IINR,std::vector<std::vector<double>> &VLC_SINR,
+                      std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &AP_allocate_power,std::vector<std::vector<int>> &AP_association_matrix){
+    std::vector<int> curr_VLC_AP_index = std::vector<int> (UE_num,-1);
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        for(int AP_index = 1 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
+            if(AP_association_matrix[AP_index][UE_index] == 1){
+                curr_VLC_AP_index[UE_index] = AP_index - 1;
+            }
+        }
+    }
+
+    for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            VLC_IINR[VLC_AP_index][UE_index] = estimate_one_VLC_IINR(VLC_LOS_matrix,AP_allocate_power,VLC_AP_index,UE_index,curr_VLC_AP_index);
+            VLC_SINR[VLC_AP_index][UE_index] = estimate_one_VLC_SINR(VLC_LOS_matrix,AP_allocate_power,VLC_AP_index,UE_index,curr_VLC_AP_index);
+        }
+    }
+}
+double estimate_one_VLC_IINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &AP_allocate_power,int VLC_AP_index,int UE_index,std::vector<int> &curr_VLC_AP_index){
+    if(curr_VLC_AP_index[UE_index] == -1){
+        return 0;
+    }
+    else{
+        double interference = VLC_noise_power_spectral_density;
+        for(int h = 0 ; h < VLC_AP_num ; h++){
+            if (h != curr_VLC_AP_index[UE_index] && h != VLC_AP_index){
+                interference  += std::pow(VLC_LOS_matrix[h][UE_index],2)*(VLC_AP_power * AP_allocate_power[h][UE_index]);
+            }
+        }
+        double p = std::pow(VLC_LOS_matrix[VLC_AP_index][UE_index],2)*(VLC_AP_power * AP_allocate_power[VLC_AP_index][UE_index]);
+        //std::cout << "ue:" << UE_index << " ,interference:" << interference << " ,p:" << p << " ,VLC_IINR:" << p / interference << "\n";
+        return p / interference;
+    }
+}
+double estimate_one_VLC_SINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &AP_allocate_power,int VLC_AP_index,int UE_index,std::vector<int> &curr_VLC_AP_index){
+    if(curr_VLC_AP_index[UE_index] == -1){
+        return 0;
+    }
+    else{
+        double interference = VLC_noise_power_spectral_density;
+        for(int h = 0 ; h < VLC_AP_num ; h++){
+            if (h != curr_VLC_AP_index[UE_index]){
+                interference  += std::pow(VLC_LOS_matrix[h][UE_index],2)*(VLC_AP_power * AP_allocate_power[h][UE_index]);
+            }
+        }
+        double p = std::pow(VLC_LOS_matrix[curr_VLC_AP_index[UE_index]][UE_index],2)*(VLC_AP_power * AP_allocate_power[curr_VLC_AP_index[UE_index]][UE_index]);
+        //std::cout << "ue:" << UE_index << " ,interference:" << interference << " ,p:" << p << " ,VLC_SINR:" << p / interference << "\n";
+        return p / interference;
+    }
 }
 
 

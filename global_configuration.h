@@ -11,7 +11,7 @@
     /ref'2/ means that this func.(var.) is used for reference : Improving the performance of Heterogeneous LiFi WiFi network using a novel Link Aggregation Framework
 */
 
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 #define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
@@ -112,4 +112,7 @@ const int urllc_dataratea_lower_bound = 1; // Mbps
 const int urllc_dataratea_upper_bound = 20; // Mbps
 const int normal_data_rate_lower_bound = 3; // Mbps
 const int normal_data_rate_upper_bound = 100; // Mbps
+const double speed_threshold = 1; // m/s
+const int wifi_threshold = UE_num / 2 ;
+const double satisfaction_threshold = 0.98;
 #endif // GLOBAL_CONFIGURATION_H

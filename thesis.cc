@@ -62,6 +62,7 @@ std::vector<double> theTime(1, 0.0);
 
 
 static int state = 0;
+static double ue_satisfaction = 0;
 /*
     AP association matrix : AP_num x UE_num
     if AP i is association to UE j then (i,j) == 1
@@ -141,6 +142,7 @@ static void RxEndAddress(Ptr<const Packet> p, const Address &address) {
 
 static void initialize() {
     state = 0;
+    ue_satisfaction = 0;
 
     AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
 
@@ -193,7 +195,7 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     proposedLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,ue_satisfaction);
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
@@ -235,6 +237,7 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
     std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl;
     std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl<<std::endl;
+    ue_satisfaction = recorded_average_satisfaction[state];
 
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
