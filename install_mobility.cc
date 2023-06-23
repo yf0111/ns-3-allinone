@@ -133,11 +133,11 @@ void installUeMobility(NodeContainer &UE_nodes) {
         for (NodeContainer::Iterator it = UE_nodes.Begin(); it != UE_nodes.End(); ++it) {
             if(i < urllc_UE_num){
                 UE_mobility_static.Install((*it));
-                std::cout << "static \n" ;
+                //std::cout << i << " : static \n" ;
             }
             else{
                 UE_mobility_dynamic.Install((*it));
-                std::cout << "dynamic \n" ;
+                //std::cout << i << " : dynamic \n" ;
             }
             i++;
         }

@@ -63,6 +63,9 @@ std::vector<double> theTime(1, 0.0);
 
 static int state = 0;
 static double ue_satisfaction = 0;
+static double total_ue_satisfaction = 0;
+static double active_ue_satisfaction = 0;
+static double total_active_ue_satisfaction = 0;
 /*
     AP association matrix : AP_num x UE_num
     if AP i is association to UE j then (i,j) == 1
@@ -91,14 +94,14 @@ std::vector<double> RF_data_rate_vector(UE_num, 0.0); // in Mbps
 std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
 std::vector<double> UE_require_data_rate(UE_num , 0.0);
 std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
-
+std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
 /*
     performance evaluation
 */
 std::vector<double> recorded_average_outage_probability(state_num,0.0); // UE average outage probability
 std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average data rate
 std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction
-
+std::vector<double> recorded_average_active_satisfaction(state_num,0.0); // UE average active satisfaction
 
 static const uint32_t totalTxBytes = 10000000;
 static uint32_t currentTxBytes = 0;
@@ -143,6 +146,9 @@ static void RxEndAddress(Ptr<const Packet> p, const Address &address) {
 static void initialize() {
     state = 0;
     ue_satisfaction = 0;
+    total_ue_satisfaction = 0;
+    active_ue_satisfaction = 0;
+    total_active_ue_satisfaction = 0;
 
     AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
 
@@ -157,10 +163,12 @@ static void initialize() {
     UE_final_data_rate_vector = std::vector<double>(UE_num,0.0);
     UE_final_satisfaction_vector = std::vector<double>(UE_num,0.0);
     UE_require_data_rate = std::vector<double>(UE_num,0.0);
+    AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0));
 
     recorded_average_outage_probability = std::vector<double>(state_num,0.0);
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
     recorded_average_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_active_satisfaction = std::vector<double>(state_num,0.0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -195,14 +203,14 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     proposedLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,ue_satisfaction);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,ue_satisfaction,AP_allocate_power,active_ue_satisfaction);
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                         AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
-                        UE_final_satisfaction_vector);
+                        UE_final_satisfaction_vector,UE_require_data_rate);
 #endif
 
 
@@ -211,14 +219,52 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     // UE average outage probability
     int outage_UE_number = 0;
     for(int i = 0 ; i < UE_num ; i++){
-        double thre = 0;
-        if (LASINR || LAEQOS && !PROPOSED_METHOD) thre = require_data_rate_threshold;
-        if (PROPOSED_METHOD && !LASINR && !LAEQOS) thre = UE_require_data_rate[i];
+        double thre = UE_require_data_rate[i];
+        /*if (LASINR || LAEQOS && !PROPOSED_METHOD) thre = require_data_rate_threshold;
+        if (PROPOSED_METHOD && !LASINR && !LAEQOS) thre = UE_require_data_rate[i];*/
         if(UE_final_data_rate_vector[i] < thre){
             outage_UE_number += 1;
         }
     }
     recorded_average_outage_probability[state] = (double) outage_UE_number / UE_num;
+
+#if DEBUG_MODE
+    /* outage user file output*/
+    double avg_speed = 0.0;
+    double total_speed = 0.0;
+    double avg_require = 0.0;
+    double total_require = 0.0;
+    for(int i=0;i<UE_num;i++){
+        total_speed += my_UE_list[i].getVelocity();
+        total_require += UE_require_data_rate[i];
+    }
+    avg_speed = total_speed / UE_num;
+    avg_require = total_require / UE_num;
+
+    std::string path = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+    std::fstream output;
+    output.open(path + "outage_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+
+    for(int i = 0 ; i < UE_num ; i++){
+        double thre = 0;
+        if (LASINR || LAEQOS && !PROPOSED_METHOD) thre = require_data_rate_threshold;
+        if (PROPOSED_METHOD && !LASINR && !LAEQOS) thre = UE_require_data_rate[i];
+        if(UE_final_data_rate_vector[i] < thre){
+            std::string group ;
+            if(my_UE_list[i].getGroup() == 1) group = "urllc";
+            if(my_UE_list[i].getGroup() == 2) group = "normal";
+            if (!output.is_open()) {
+                std::cout << "Fail to open file\n";
+                exit(EXIT_FAILURE);
+            }
+            else{
+                output << i << "," << avg_speed << "," << avg_require << "," << group << "," << my_UE_list[i].getVelocity() << "," << my_UE_list[i].getCurrRFAssociatedAP() << "," << UE_require_data_rate[i] << "," << UE_final_data_rate_vector[i] << std::endl ;
+            }
+        }
+    }
+    output.close();
+
+#endif // DEBUG_MODE
 
     // UE average data rate
     double total_UE_data_rate = 0;
@@ -229,15 +275,46 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 
     // UE average satisfaction
     double total_UE_satis = 0;
+    double total_active_UE_satis = 0;
+    int cal = 0;
     for(int i = 0 ; i < UE_num ; i++){
         total_UE_satis += UE_final_satisfaction_vector[i];
+        if(UE_final_satisfaction_vector[i] != 0 ){
+            cal += 1;
+            total_active_UE_satis += UE_final_satisfaction_vector[i];
+        }
     }
+
     recorded_average_satisfaction[state] = (double) total_UE_satis / UE_num;
+    recorded_average_active_satisfaction[state] = (double) total_active_UE_satis / cal;
+
+    total_ue_satisfaction += recorded_average_satisfaction[state];
+    ue_satisfaction = total_ue_satisfaction / (state+1);
+
+    total_active_ue_satisfaction += recorded_average_active_satisfaction[state];
+    active_ue_satisfaction = total_active_ue_satisfaction / (state+1);
+
+#if DEBUG_MODE
+    /* user satisfaction & active user satisfaction file output */
+    std::string path1 = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+    std::fstream output1;
+
+    output1.open(path1 + "satisfaction_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    if (!output1.is_open()) {
+        std::cout << "Fail to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        output1 << recorded_average_satisfaction[state] << "," << recorded_average_active_satisfaction[state] << std::endl ;
+    }
+    output1.close();
+
+#endif // DEBUG_MODE
 
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
     std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl;
+    std::cout << "one state avg activate satisfaction: " <<recorded_average_active_satisfaction[state] << std::endl;
     std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl<<std::endl;
-    ue_satisfaction = recorded_average_satisfaction[state];
 
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
@@ -361,12 +438,8 @@ int main(int argc, char *argv[])
         std::cout << "Fail to open file\n";
         exit(EXIT_FAILURE);
     }
-    else if(PROPOSED_METHOD){
-        output << avg_outage_probability << "," << avg_satisfaction << "," << avg_data_rate;
-        output << std::endl;
-    }
     else{
-        output << avg_outage_probability << "," << avg_data_rate;
+        output << avg_outage_probability << "," << avg_satisfaction << "," << avg_data_rate;
         output << std::endl;
     }
     output.close();

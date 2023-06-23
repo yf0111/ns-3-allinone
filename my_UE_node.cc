@@ -22,8 +22,10 @@ MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate)
 
     polar_angle = 0.0;
     azimuth_angle = 0.0;
-    prev_associated_AP = -1;
-    curr_associated_AP = -1;
+    prev_RF_associated_AP = -1;
+    curr_RF_associated_AP = -1;
+    prev_VLC_associated_AP = -1;
+    curr_VLC_associated_AP = -1;
 }
 
 MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate, int group) //* : generator(std::chrono::system_clock::now().time_since_epoch().count()), distribution(0.0, sqrt(noise_variance))
@@ -35,11 +37,11 @@ MyUeNode::MyUeNode(int node_ID, Vector pos, double required_data_rate, int group
 
     polar_angle = 0.0;
     azimuth_angle = 0.0;
-    prev_associated_AP = -1;
-    curr_associated_AP = -1;
+    prev_RF_associated_AP = -1;
+    curr_RF_associated_AP = -1;
+    prev_VLC_associated_AP = -1;
+    curr_VLC_associated_AP = -1;
 }
-
-
 
 int MyUeNode::getID(void) {
     return node_ID;
@@ -69,80 +71,35 @@ double MyUeNode::getRequiredDataRate(void) {
     return required_data_rate;
 }
 
-void MyUeNode::setCurrAssociatedAP(int associated_AP_index) {
-    prev_associated_AP = curr_associated_AP;
-    curr_associated_AP = associated_AP_index;
+void MyUeNode::setCurrVlcAssociatedAP(int associated_AP_index) {
+    prev_VLC_associated_AP = curr_VLC_associated_AP;
+    curr_VLC_associated_AP = associated_AP_index;
 }
 
-void MyUeNode::changeCurrAssociatedAP(int associated_AP_index) {
-    curr_associated_AP = associated_AP_index;
+int MyUeNode::getCurrVlcAssociatedAP(void) {
+    return curr_VLC_associated_AP;
 }
 
-int MyUeNode::getCurrAssociatedAP(void) {
-    return curr_associated_AP;
+int MyUeNode::getPrevVlcAssociatedAP(void) {
+    return prev_VLC_associated_AP;
 }
 
-int MyUeNode::getPrevAssociatedAP(void) {
-    return prev_associated_AP;
+void MyUeNode::setCurrRFAssociatedAP(int associated_AP_index) {
+    prev_RF_associated_AP = curr_RF_associated_AP;
+    curr_RF_associated_AP = associated_AP_index;
 }
 
-void MyUeNode::addThroughput(double new_data_rate) {
-    throughput_per_state.push_back(new_data_rate);
+int MyUeNode::getCurrRFAssociatedAP(void) {
+    return curr_RF_associated_AP;
 }
 
-double MyUeNode::getLastThroughput(void) {
-    if (throughput_per_state.empty()) {
-        std::cout << "user " << getID() << "'s throughput vector is empty\n";
-        return 0.0;
-    }
-
-    return throughput_per_state.back();
-}
-
-double MyUeNode::calculateAvgThroughput(void) {
-    double throughput_sum = 0.0;
-
-    for (int i = 0; i < throughput_per_state.size(); i++)
-        throughput_sum += throughput_per_state[i];
-
-    return throughput_sum / throughput_per_state.size();
-}
-
-std::vector<double> MyUeNode::getThroughputHistory(void) {
-    return throughput_per_state;
-}
-
-void MyUeNode::addSatisfaction(double new_satis) {
-    satisfaction_per_state.push_back(new_satis);
-}
-
-double MyUeNode::getLastSatisfaction(void) {
-    if (satisfaction_per_state.empty()) {
-        std::cout << "user " << getID() << "'s satisfaction vector is empty\n";
-        return 0.0;
-    }
-
-    return satisfaction_per_state.back();
-}
-
-double MyUeNode::calculateAvgSatisfaction(void) {
-    double satis_sum = 0.0;
-
-    for (int i = 0; i < satisfaction_per_state.size(); i++) {
-        satis_sum += satisfaction_per_state[i];
-    }
-
-    return satis_sum / satisfaction_per_state.size();
-}
-
-std::vector<double> MyUeNode::getSatisfactionHistory(void) {
-    return satisfaction_per_state;
+int MyUeNode::getPrevRFAssociatedAP(void) {
+    return prev_RF_associated_AP;
 }
 
 void MyUeNode::setPolarAngle(double new_polar_angle) {
     polar_angle = new_polar_angle;
 }
-
 
 double MyUeNode::getPolarAngle(void) {
     return polar_angle;

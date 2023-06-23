@@ -25,13 +25,20 @@ void printVlcLosMatrix(std::vector<std::vector<double>> &VLC_LOS_matrix){
 
 void printVlcSinrMatrix(std::vector<std::vector<double>> &VLC_SINR_matrix){
     std::cout << "VLC SINR matrix as below: " << std::endl;
-    for (int i = 0; i < VLC_AP_num; i++) {
+    /*for (int i = 0; i < VLC_AP_num; i++) {
         std::cout << "For VLC AP " << i << ": \n";
         for (int j = 0; j < UE_num; j++) {
             std::cout << "  UE " << j << " : " << VLC_SINR_matrix[i][j]<< " ";
             //std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(15)<<VLC_SINR_matrix[i][j]<<" ";
             std::cout << std::endl;
         }
+        std::cout << std::endl;
+    }*/
+    for (int i = 0; i < VLC_AP_num; i++) {
+        for (int j = 0; j < UE_num; j++) {
+            std::cout << VLC_SINR_matrix[i][j] << " ";
+        }
+
         std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -79,7 +86,6 @@ void printRFDataRateVector(std::vector<double> &RF_data_rate_vector){
 void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matrix){
 
     std::cout << "AP association matrix as below: " << std::endl;
-
     for (int i = 0; i < RF_AP_num + VLC_AP_num; i++) {
         for (int j = 0; j < UE_num; j++) {
             std::cout << AP_association_matrix[i][j] << " ";
@@ -87,7 +93,6 @@ void printApAssociationMatrix(std::vector<std::vector<int>> &AP_association_matr
 
         std::cout << std::endl;
     }
-
     std::cout << std::endl;
 }
 

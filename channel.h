@@ -38,9 +38,9 @@ double getDistance(Ptr<Node> AP, MyUeNode &UE_node); // in meters
 void calculateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix);
 double estimateOneVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int VLC_AP_index,int UE_index);
 void updateAllVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &VLC_SINR_matrix,
-                      std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation);
+                      std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation,std::vector<int> &AP_serve_num);
 double estimateUpdateVlcSINR(std::vector<std::vector<double>> &VLC_LOS_matrix,int VLC_AP_index,int UE_index,
-                                std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation);
+                                std::vector<std::vector<int>> &AP_association_matrix,std::vector<std::vector<double>> AP_power_allocation,std::vector<int> &AP_serve_num);
 void cal_All_VLC_IINR_SINR(std::vector<std::vector<double>> &VLC_IINR,std::vector<std::vector<double>> &VLC_SINR,
                       std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &AP_allocate_power,std::vector<std::vector<int>> &AP_association_matrix);
 double estimate_one_VLC_IINR(std::vector<std::vector<double>> &VLC_LOS_matrix,std::vector<std::vector<double>> &AP_allocate_power,int VLC_AP_index,int UE_index,std::vector<int> &curr_VLC_AP_index);

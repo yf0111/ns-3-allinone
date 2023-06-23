@@ -24,7 +24,9 @@ void proposedLB(int &state,
                 std::vector<double> &UE_final_data_rate_vector,
                 std::vector<double> &UE_final_satisfaction_vector,
                 std::vector<double> &UE_require_data_rate,
-                double ue_satisfaction);
+                double ue_satisfaction,
+                std::vector<std::vector<double>> &AP_allocate_power,
+                double active_ue_satisfaction);
 
 void RA(std::vector<std::vector<double>> &AP_allocate_power,
         std::vector<std::vector<int>> &local_AP_association_matrix,

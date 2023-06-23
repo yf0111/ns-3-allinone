@@ -21,7 +21,7 @@ const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 20; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 1000 ]
+const int state_num = 100; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 100 ]
 
 
 /*  RF AP  */
@@ -51,10 +51,6 @@ const double VLC_AP_height = 3; // m //
 const double VLC_AP_power = 3; // W //
 const int VLC_AP_bandwidth = 40; // MHz //
 const double VLC_noise_power_spectral_density = 1e-15; // A^2/MHz // @-ref'1- 1e-15@ , @-ref'2- 1e-24@
-/*
-ref'1 : 1e-21 A^2/Hz = 1e-15 A^2/MHz
-ref'2 : -210 dBm/MHz ~= 1e-24 A^2/MHz
-*/
 const double conversion_efficiency = 0.53; // A/W // optical to electrical conversion efficiency (τ) , PD’s responsivity (μ) ,
 
 
@@ -90,14 +86,12 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 
 /*  ref'2 system parameter  */
 const double la_overhead = 0.8;
-const int LA_UE_num = 4;
+const int LA_UE_num = 10;
 const double require_data_rate_threshold = 25; // Mbps
 
 
 /*  ref'1 system parameter  */
 //const double reflection_coe = 0.8; // ρ ,walls reflectivity
-const double eta_hho = 0.9;
-const double eta_vho = 0.6;
 const double C_one = 100; // C1
 const double C_two = 1000; // C2
 
@@ -107,12 +101,13 @@ const double SINR_threshold = 5; // dB
 const int urllc_UE_num = UE_num / 2;
 const double packet_size = 2000; // 250 byte = 2000 bits
 const double T_max = 1; //ms
-const double packet_arrival_rate = 24e-2; // Mbps // 0.12 packet/slot/per IIOT source = 0.12 * 250 (byte) / slot/per IIOT source = 240 bits/1ms = 0.24 Mbps
 const int urllc_dataratea_lower_bound = 1; // Mbps
 const int urllc_dataratea_upper_bound = 20; // Mbps
 const int normal_data_rate_lower_bound = 3; // Mbps
 const int normal_data_rate_upper_bound = 100; // Mbps
-const double speed_threshold = 1; // m/s
+const double speed_threshold = 0.4; // m/s
 const int wifi_threshold = UE_num / 2 ;
 const double satisfaction_threshold = 0.98;
+const double eta_hho = 0.9; // from ref1
+const double eta_vho = 0.6; // from ref1
 #endif // GLOBAL_CONFIGURATION_H

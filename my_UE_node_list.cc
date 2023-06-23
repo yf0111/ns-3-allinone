@@ -17,7 +17,6 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
 {
     std::vector<MyUeNode> my_UE_list;
     std::default_random_engine generator (std::chrono::system_clock::now().time_since_epoch().count());
-    std::poisson_distribution<int> distribution_benchmark(70);
     std::uniform_int_distribution<int> uniform_urllc(urllc_dataratea_lower_bound, urllc_dataratea_upper_bound);
     std::uniform_int_distribution<int> uniform_normal(normal_data_rate_lower_bound, normal_data_rate_upper_bound);
 
@@ -27,7 +26,8 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
         int group = 0;
 
         if ((LASINR || LAEQOS) && !PROPOSED_METHOD){
-            required_data_rate = require_data_rate_threshold;
+            //required_data_rate = require_data_rate_threshold;
+            required_data_rate = uniform_normal(generator);
         }
         else if( PROPOSED_METHOD ){
             if(i < urllc_UE_num){

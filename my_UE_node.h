@@ -29,20 +29,13 @@ public:
     void setRequiredDataRate(double data_rate_in_Mbps);
     double getRequiredDataRate(void);
 
-    void setCurrAssociatedAP(int associated_AP_index);
-    void changeCurrAssociatedAP(int associated_AP_index);
-    int getCurrAssociatedAP(void);
-    int getPrevAssociatedAP(void);
+    void setCurrVlcAssociatedAP(int associated_AP_index);
+    int getCurrVlcAssociatedAP(void);
+    int getPrevVlcAssociatedAP(void);
 
-    void addThroughput(double new_data_rate);
-    double getLastThroughput(void);
-    double calculateAvgThroughput(void);
-    std::vector<double> getThroughputHistory(void);
-
-    void addSatisfaction(double new_satis);
-    double getLastSatisfaction(void);
-    double calculateAvgSatisfaction(void);
-    std::vector<double> getSatisfactionHistory(void);
+    void setCurrRFAssociatedAP(int associated_AP_index);
+    int getCurrRFAssociatedAP(void);
+    int getPrevRFAssociatedAP(void);
 
     double getPolarAngle(void);
     double getAzimuthAngle(void);
@@ -62,8 +55,10 @@ private:
     std::normal_distribution<double> distribution;
 
     // 0 indicates RF AP, and [1, VLC_AP_num] indicates VLC APs
-    int prev_associated_AP;
-    int curr_associated_AP;
+    int prev_VLC_associated_AP;
+    int curr_VLC_associated_AP;
+    int prev_RF_associated_AP;
+    int curr_RF_associated_AP;
     std::vector<double> throughput_per_state;
     std::vector<double> satisfaction_per_state;
 

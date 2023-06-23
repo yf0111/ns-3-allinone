@@ -16,6 +16,7 @@
 #include "channel.h"
 #include "benchmark.h"
 #include "my_UE_node.h"
+#include "proposed_method.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/mobility-module.h"
@@ -44,7 +45,8 @@ void benchmarkMethod(int &state,
                      std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
-                     std::vector<double> &UE_final_satisfaction_vector)
+                     std::vector<double> &UE_final_satisfaction_vector,
+                     std::vector<double> &UE_require_data_rate)
 {
     precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
                    VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
@@ -54,14 +56,15 @@ void benchmarkMethod(int &state,
     /*
         ref'2 , LA-SINR
     */
-    LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+    LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate);
 #endif // LASINR
 
 #if LAEQOS
     /*
         ref'2 , LA-EQOS
     */
-    LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list);
+    LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate);
+
 #endif // LAEQOS
 
 }
@@ -70,11 +73,13 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
              std::vector<std::vector<double>> &VLC_SINR_matrix,
              std::vector<double> &UE_final_data_rate_vector,
-             std::vector<MyUeNode> &my_UE_list)
+             std::vector<MyUeNode> &my_UE_list,
+             std::vector<double> &UE_final_satisfaction_vector,
+             std::vector<double> &UE_require_data_rate)
 {
 
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
-
+    UE_require_data_rate = createUEDemandVector(my_UE_list);
 
 /*  Standalone LiFi */
 /*
@@ -231,8 +236,36 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
         UE_final_data_rate_vector[UE_index] = (RF_data_rate + VLC_data_rate) * la_overhead;
     }
 
+    AP_association_matrix = local_AP_association_matrix;
+    updateApAssociationResult(local_AP_association_matrix,my_UE_list);
 
-    updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
+    // calculate user satisfaction
+    std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
+    std::vector<double> US_latency = std::vector<double> (UE_num,0.0);
+    std::vector<double> US_datarate = std::vector<double> (UE_num,0.0);
+    cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
+    cal_US_Latency(US_latency,UE_final_data_rate_vector);
+    cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
+
+    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+        if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
+            UE_final_satisfaction_vector[UE_index] = 0;
+        }
+        else{
+            if(UE_index < 5){ // urllc
+                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2* US_datarate[UE_index]);
+            }
+            if(UE_index > 4){ // normal
+                UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
+            }
+            /*if(my_UE_list[UE_index].getGroup() == 1){ // urllc
+                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2* US_datarate[UE_index]);
+            }
+            if(my_UE_list[UE_index].getGroup() == 2){ // normal
+                UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
+            }*/
+        }
+    }
 }
 
 
@@ -240,9 +273,12 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
              std::vector<std::vector<double>> &VLC_SINR_matrix,
              std::vector<double> &UE_final_data_rate_vector,
-             std::vector<MyUeNode> &my_UE_list)
+             std::vector<MyUeNode> &my_UE_list,
+             std::vector<double> &UE_final_satisfaction_vector,
+             std::vector<double> &UE_require_data_rate)
 {
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
+    UE_require_data_rate = createUEDemandVector(my_UE_list);
 
     // step 1 : AP association using stand LiFi formula (11)
 
@@ -325,7 +361,7 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
         double final_data_rate = (rf_data_rate + vlc_data_rate)* la_overhead;
         UE_final_data_rate_vector[UE_index] = final_data_rate;
     }
-    updateApAssociationResult(local_AP_association_matrix,AP_association_matrix,my_UE_list);
+    updateApAssociationResult(local_AP_association_matrix,my_UE_list);
 
 }
 
@@ -908,27 +944,19 @@ double calculatedR3(std::vector<int> &UE_type,
     return total_q / UE_num;
 }
 
-void updateApAssociationResult(std::vector<std::vector<int>> &local_AP_sssociation_matrix,
-                               std::vector<std::vector<int>> &AP_sssociation_matrix,
+void updateApAssociationResult(std::vector<std::vector<int>> &AP_sssociation_matrix,
                                std::vector<MyUeNode> &my_UE_list){
-    AP_sssociation_matrix = local_AP_sssociation_matrix;
 
-    // update every myUeNode
-    for (int i = 0; i < local_AP_sssociation_matrix.size(); i++) {
-        for (int j = 0; j < local_AP_sssociation_matrix[0].size(); j++) {
-            if (local_AP_sssociation_matrix[i][j] == 1)
-                my_UE_list[j].setCurrAssociatedAP(i);
+    for(int AP_index = 0 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            if(AP_index == 0){
+                my_UE_list[UE_index].setCurrRFAssociatedAP(AP_sssociation_matrix[0][UE_index]);
+            }
+            else{
+                if(AP_sssociation_matrix[AP_index][UE_index] == 1){
+                    my_UE_list[UE_index].setCurrVlcAssociatedAP(AP_index);
+                }
+            }
         }
-    }
-}
-
-void updateResourceAllocationResult(std::vector<std::vector<double>> &throughtput_per_iteration, std::vector<MyUeNode> &my_UE_list){
-
-    for (int i = 0; i < my_UE_list.size(); i++) {
-        double curr_throughput = throughtput_per_iteration[i].back();
-        double curr_satisfaction = std::min(curr_throughput / my_UE_list[i].getRequiredDataRate(), 1.0);
-
-        my_UE_list[i].addThroughput(curr_throughput);
-        my_UE_list[i].addSatisfaction(curr_satisfaction);
     }
 }
