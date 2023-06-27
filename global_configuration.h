@@ -21,7 +21,7 @@ const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m //
 const double time_period = 0.5; // sec //
-const int state_num = 100; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 100 ]
+const int state_num = 1; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 100 ]
 
 
 /*  RF AP  */
@@ -107,7 +107,6 @@ const int normal_data_rate_lower_bound = 3; // Mbps
 const int normal_data_rate_upper_bound = 100; // Mbps
 const double speed_threshold = 0.4; // m/s
 const int wifi_threshold = UE_num / 2 ;
-const double satisfaction_threshold = 0.98;
 const double eta_hho = 0.9; // from ref1
 const double eta_vho = 0.6; // from ref1
 #endif // GLOBAL_CONFIGURATION_H

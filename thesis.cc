@@ -100,8 +100,9 @@ std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<dou
 */
 std::vector<double> recorded_average_outage_probability(state_num,0.0); // UE average outage probability
 std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average data rate
-std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction
-std::vector<double> recorded_average_active_satisfaction(state_num,0.0); // UE average active satisfaction
+std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction (new)
+std::vector<double> recorded_average_active_satisfaction(state_num,0.0); // UE average active satisfaction (new)
+std::vector<double> recorded_average_old_satisfaction(state_num,0.0); // UE average satisfaction (old)
 
 static const uint32_t totalTxBytes = 10000000;
 static uint32_t currentTxBytes = 0;
@@ -169,6 +170,7 @@ static void initialize() {
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
     recorded_average_satisfaction = std::vector<double>(state_num,0.0);
     recorded_average_active_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_old_satisfaction = std::vector<double>(state_num,0.0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -273,7 +275,16 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     }
     recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
 
-    // UE average satisfaction
+    // UE average satisfaction (old)
+    double total_ue_old_satis = 0;
+    for (int i = 0 ; i < UE_num ; i++){
+        double temp = (double) UE_final_data_rate_vector[i] / UE_require_data_rate[i];
+        temp = std::min(temp,1.0);
+        total_ue_old_satis += temp;
+    }
+    recorded_average_old_satisfaction[state] = (double) total_ue_old_satis / UE_num;
+
+    // UE average satisfaction (new)
     double total_UE_satis = 0;
     double total_active_UE_satis = 0;
     int cal = 0;
@@ -312,7 +323,8 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 #endif // DEBUG_MODE
 
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
-    std::cout << "one state avg satisfaction: "<<recorded_average_satisfaction[state] << std::endl;
+    std::cout << "one state avg satisfaction (old): "<<recorded_average_old_satisfaction[state] << std::endl;
+    std::cout << "one state avg satisfaction (new): "<<recorded_average_satisfaction[state] << std::endl;
     std::cout << "one state avg activate satisfaction: " <<recorded_average_active_satisfaction[state] << std::endl;
     std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl<<std::endl;
 
@@ -383,12 +395,20 @@ int main(int argc, char *argv[])
     }
     avg_outage_probability = avg_outage_probability / state_num;
 
-    // overall avg. satisfaction
-    double avg_satisfaction = 0.0;
+    // overall avg. satisfaction (old)
+    double avg_old_satisfaction = 0.0;
     for(int i = 0 ; i < state_num ; i++){
-        avg_satisfaction += recorded_average_satisfaction[i];
+        avg_old_satisfaction += recorded_average_old_satisfaction[i];
     }
-    avg_satisfaction = avg_satisfaction / state_num;
+    avg_old_satisfaction = avg_old_satisfaction / state_num;
+
+
+    // overall avg. satisfaction (new)
+    double avg_new_satisfaction = 0.0;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_new_satisfaction += recorded_average_satisfaction[i];
+    }
+    avg_new_satisfaction = avg_new_satisfaction / state_num;
 
     // overall avg. data rate
     double avg_data_rate = 0.0;
@@ -399,7 +419,7 @@ int main(int argc, char *argv[])
 
 
     std::cout << "overall avg outage: "<< avg_outage_probability << std::endl;
-    std::cout << "overall avg satisfaction: "<<avg_satisfaction << std::endl;
+    std::cout << "overall avg satisfaction: "<<avg_new_satisfaction << std::endl;
     std::cout << "overall avg data rate: "<< avg_data_rate << std::endl<<std::endl;
 
     // calculate the actual executing time
@@ -439,7 +459,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     else{
-        output << avg_outage_probability << "," << avg_satisfaction << "," << avg_data_rate;
+        output << avg_outage_probability << "," << avg_old_satisfaction << "," << avg_new_satisfaction << "," << avg_data_rate;
         output << std::endl;
     }
     output.close();

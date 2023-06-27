@@ -45,7 +45,7 @@ void proposedLB(int &state,
     /* initialize */
     UE_require_data_rate = createUEDemandVector(my_UE_list);
 
-    if(ue_satisfation - active_ue_satisfaction < 0.02){
+    if(ue_satisfation - active_ue_satisfaction < 0.035){
         APS(VLC_SINR_matrix,AP_association_matrix,my_UE_list,UE_nodes);
         RA(AP_allocate_power,AP_association_matrix,UE_require_data_rate);
         cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
@@ -360,11 +360,10 @@ void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
         }
         else{
             if(my_UE_list[UE_index].getGroup() == 1){ // urllc
-                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2* US_datarate[UE_index]);
-                //UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.3 * US_latency[UE_index]) + (0.3* US_datarate[UE_index]);
+                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2 * US_datarate[UE_index]);
             }
             if(my_UE_list[UE_index].getGroup() == 2){ // normal
-                UE_final_satisfaction_vector[UE_index] = (0 * US_reliability[UE_index]) + (0.5 * US_latency[UE_index]) + (0.5 * US_datarate[UE_index]);
+                UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
             }
         }
     }
@@ -393,7 +392,7 @@ void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
                 }
             }
             else{ //VLC
-                if(SINR_to_dB(VLC_SINR_matrix[AP_index-1][UE_index]) < SINR_threshold){
+                if(SINR_to_dB(VLC_SINR_matrix[AP_index-1][UE_index]) > SINR_threshold){
                     US_reliability[UE_index] = 1;
                     break;
                 }
