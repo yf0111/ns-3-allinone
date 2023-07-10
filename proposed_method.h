@@ -30,24 +30,17 @@ void proposedLB(int &state,
 
 void RA(std::vector<std::vector<double>> &AP_allocate_power,
         std::vector<std::vector<int>> &local_AP_association_matrix,
-        std::vector<double> &UE_require_data_rate);
+        std::vector<double> &UE_require_data_rate,
+        std::vector<double> &RF_channel_gain_vector,
+        std::vector<std::vector<double>> &VLC_LOS_matrix,
+        std::vector<MyUeNode> &my_UE_list);
 
 void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
          std::vector<std::vector<int>> &AP_association_matrix,
          std::vector<MyUeNode> &my_UE_list,
          NodeContainer &UE_nodes);
 
-void RRA(std::vector<double> &minimum_rf_allocate_percentage,
-         std::vector<double> &UE_require_data_rate,
-         std::vector<double> &UE_final_data_rate_vector,
-         std::vector<std::vector<double>> &VLC_LOS_matrix,
-         std::vector<std::vector<double>> &VLC_SINR_matrix,
-         std::vector<std::vector<double>> &VLC_data_rate_matrix,
-         std::vector<double> &RF_channel_gain_vector,
-         std::vector<double> &RF_SINR_vector,
-         std::vector<double> &RF_data_rate_vector,
-         std::vector<MyUeNode> &my_UE_list,
-         std::vector<std::vector<int>> &local_AP_association_matrix,
+void RRA(std::vector<std::vector<int>> &AP_association_matrix,
          std::vector<std::vector<double>> &AP_allocate_power);
 
 void RAPS(std::vector<std::vector<double>> &VLC_LOS_matrix,
@@ -69,13 +62,16 @@ void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<double> &UE_final_satisfaction_vector,
                      std::vector<double> &UE_require_data_rate);
 
-void cal_minumum_allocate_power_percentage(std::vector<double> &minimum_rf_allocate_percentage,
-                                           std::vector<double> &UE_require_data_rate,
-                                           std::vector<double> &RF_channel_gain_vector);
+double cal_minumum_allocate_power_percentage(std::vector<double> &UE_require_data_rate,
+                                           std::vector<double> &RF_channel_gain_vector,
+                                           std::vector<std::vector<double>> &VLC_LOS_matrix,
+                                           int UE_index,
+                                           int AP_index);
 
 void cal_US_Reliability(std::vector<double> &RF_SINR_vector,
                        std::vector<std::vector<double>> &VLC_SINR_matrix,
-                       std::vector<double> &US_reliability);
+                       std::vector<double> &US_reliability,
+                       std::vector<std::vector<int>> &AP_association_matrix);
 
 void cal_US_Latency(std::vector<double> &US_latency,
                     std::vector<double> &UE_final_data_rate_vector);
@@ -93,4 +89,8 @@ bool sort_by_sec_descending(const std::pair<int,double> &a, const std::pair<int,
 bool sort_by_sec_ascending(const std::pair<int,double> &a, const std::pair<int,double> &b);
 
 double roundNumber(double oriNum, int bits);
+
+void check_indoor_user(std::vector<MyUeNode> &my_UE_list,
+                       int &indoor_user_amount,
+                       std::vector<int> &indoor_user_index);
 #endif // PROPOSED_METHOD_H

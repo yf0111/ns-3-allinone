@@ -243,7 +243,7 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
     std::vector<double> US_reliability = std::vector<double>(UE_num,0.0);
     std::vector<double> US_latency = std::vector<double> (UE_num,0.0);
     std::vector<double> US_datarate = std::vector<double> (UE_num,0.0);
-    cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability);
+    cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability,AP_association_matrix);
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
     cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
 
@@ -947,6 +947,7 @@ double calculatedR3(std::vector<int> &UE_type,
 void updateApAssociationResult(std::vector<std::vector<int>> &AP_sssociation_matrix,
                                std::vector<MyUeNode> &my_UE_list){
 
+    // weird, useless?
     for(int AP_index = 0 ; AP_index < RF_AP_num + VLC_AP_num ; AP_index++){
         for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
             if(AP_index == 0){
