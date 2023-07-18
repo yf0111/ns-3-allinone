@@ -78,7 +78,10 @@ void cal_US_Latency(std::vector<double> &US_latency,
 
 void cal_US_DataRate(std::vector<double> &final_data_rate,
                      std::vector<double> &require_data_rate,
-                     std::vector<double> &US_datarate);
+                     std::vector<double> &US_datarate,
+                     std::vector<double> &US_latency,
+                     std::vector<double> &US_reliability,
+                     std::vector<MyUeNode> &my_UE_list);
 
 double SINR_to_dB(double SINR);
 
@@ -91,6 +94,5 @@ bool sort_by_sec_ascending(const std::pair<int,double> &a, const std::pair<int,d
 double roundNumber(double oriNum, int bits);
 
 void check_indoor_user(std::vector<MyUeNode> &my_UE_list,
-                       int &indoor_user_amount,
                        std::vector<int> &indoor_user_index);
 #endif // PROPOSED_METHOD_H

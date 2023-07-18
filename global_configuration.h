@@ -15,13 +15,13 @@
 #define PROPOSED_METHOD 1
 #define LASINR 0
 #define LAEQOS 0
-
+#define SUPER_DYNAMIC 0
 
 const double PI = boost::math::constants::pi<double>();
 const double EE = boost::math::constants::e<double>();
 const double room_size = 5; // m // ✓
 const double time_period = 0.5; // sec //
-const int state_num = 200; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 100 ]
+const int state_num = 100; // @-ref'2- 1@  // [ static : 1 ], [ dynamic : 100 ]
 
 
 /*  RF AP  */
@@ -56,7 +56,6 @@ const double conversion_efficiency = 0.53; // A/W // optical to electrical conve
 
 /*  UE  */
 const int UE_num = 10;
-const int UE_num_max = 10;
 const double UE_height = 1; // m // @-ref'1- 1@ , @-ref'2- 0@ ✓
 const double avg_speed = 1.0; // m/s ✓
 const double pause_time = 10.0;
@@ -85,7 +84,7 @@ const double noise_variance = (1.0 - c_1 * c_1) * angle_variance * angle_varianc
 
 /*  ref'2 system parameter  */
 const double la_overhead = 0.8; // ✓
-const int LA_UE_num = 10;
+const int LA_UE_num = UE_num;
 const double require_data_rate_threshold = 25; // Mbps
 
 
@@ -103,7 +102,7 @@ const int urllc_dataratea_lower_bound = 1; // Mbps ✓
 const int urllc_dataratea_upper_bound = 20; // Mbps ✓
 const int normal_data_rate_lower_bound = 3; // Mbps ✓
 const int normal_data_rate_upper_bound = 100; // Mbps ✓
-const double speed_threshold = 0.4; // m/s
+const double speed_threshold = 1; // m/s
 const int wifi_threshold = UE_num / 2 ;
 const double eta_hho = 0.9; // from ref1 ✓
 const double eta_vho = 0.6; // from ref1 ✓

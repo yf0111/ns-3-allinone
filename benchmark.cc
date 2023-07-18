@@ -245,25 +245,14 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
     std::vector<double> US_datarate = std::vector<double> (UE_num,0.0);
     cal_US_Reliability(RF_SINR_vector,VLC_SINR_matrix,US_reliability,AP_association_matrix);
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
-    cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate);
+    cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate,US_latency,US_reliability,my_UE_list);
 
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
             UE_final_satisfaction_vector[UE_index] = 0;
         }
         else{
-            if(UE_index < 5){ // urllc
-                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2* US_datarate[UE_index]);
-            }
-            if(UE_index > 4){ // normal
-                UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
-            }
-            /*if(my_UE_list[UE_index].getGroup() == 1){ // urllc
-                UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.2* US_datarate[UE_index]);
-            }
-            if(my_UE_list[UE_index].getGroup() == 2){ // normal
-                UE_final_satisfaction_vector[UE_index] = (0.1 * US_reliability[UE_index]) + (0.1 * US_latency[UE_index]) + (0.8 * US_datarate[UE_index]);
-            }*/
+            UE_final_satisfaction_vector[UE_index] = US_datarate[UE_index];
         }
     }
 }

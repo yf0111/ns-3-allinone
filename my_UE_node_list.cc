@@ -26,8 +26,7 @@ std::vector<MyUeNode> initializeMyUeNodeList(NodeContainer &UE_nodes)
         int group = 0;
 
         if ((LASINR || LAEQOS) && !PROPOSED_METHOD){
-            //required_data_rate = require_data_rate_threshold;
-            required_data_rate = uniform_normal(generator);
+            required_data_rate = require_data_rate_threshold;
         }
         else if( PROPOSED_METHOD ){
             if(i < urllc_UE_num){

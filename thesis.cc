@@ -103,6 +103,12 @@ std::vector<double> recorded_average_data_rate(state_num,0.0); // UE average dat
 std::vector<double> recorded_average_satisfaction(state_num,0.0); // UE average satisfaction (new)
 std::vector<double> recorded_average_active_satisfaction(state_num,0.0); // UE average active satisfaction (new)
 std::vector<double> recorded_average_old_satisfaction(state_num,0.0); // UE average satisfaction (old)
+std::vector<double> recorded_average_urllc_satisfaction(state_num,0.0); // URLLC user average satisfaction
+std::vector<double> recorded_average_urllc_active_satisfaction(state_num,0.0); // URLLC active user average satisfaction
+std::vector<double> recorded_average_normal_satisfaction(state_num,0.0); //normal user average satisfaction
+std::vector<double> recorded_average_normal_active_satisfaction(state_num,0.0); // normal active user average satisfaciton
+
+
 
 static const uint32_t totalTxBytes = 10000000;
 static uint32_t currentTxBytes = 0;
@@ -113,7 +119,6 @@ std::string path = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scr
 
 void StartFlow(Ptr<Socket>, Ipv4Address, uint16_t);
 void WriteUntilBufferFull(Ptr<Socket>, uint32_t);
-
 
 /*
 convert anything to string function
@@ -171,6 +176,10 @@ static void initialize() {
     recorded_average_satisfaction = std::vector<double>(state_num,0.0);
     recorded_average_active_satisfaction = std::vector<double>(state_num,0.0);
     recorded_average_old_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_urllc_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_urllc_active_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_normal_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_normal_active_satisfaction = std::vector<double>(state_num,0.0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -193,12 +202,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
                        NodeContainer &UE_nodes,
                        std::vector<MyUeNode> &my_UE_list)
 {
-#if DEBUG_MODE
-    std::cout << "state : " << state << "\n";
-    printUePosition(UE_nodes);
-    printUEVelocity(UE_nodes);
-#endif
-
 
 #if PROPOSED_METHOD
 
@@ -222,16 +225,13 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     int outage_UE_number = 0;
     for(int i = 0 ; i < UE_num ; i++){
         double thre = UE_require_data_rate[i];
-        /*if (LASINR || LAEQOS && !PROPOSED_METHOD) thre = require_data_rate_threshold;
-        if (PROPOSED_METHOD && !LASINR && !LAEQOS) thre = UE_require_data_rate[i];*/
         if(UE_final_data_rate_vector[i] < thre){
             outage_UE_number += 1;
         }
     }
     recorded_average_outage_probability[state] = (double) outage_UE_number / UE_num;
 
-#if DEBUG_MODE
-    /* outage user file output*/
+#if DEBUG_MODE // outage user file output
     double avg_speed = 0.0;
     double total_speed = 0.0;
     double avg_require = 0.0;
@@ -285,7 +285,7 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     recorded_average_old_satisfaction[state] = (double) total_ue_old_satis / UE_num;
 
     // UE average satisfaction (new)
-    double total_UE_satis = 0;
+    /*double total_UE_satis = 0;
     double total_active_UE_satis = 0;
     int cal = 0;
     for(int i = 0 ; i < UE_num ; i++){
@@ -294,10 +294,47 @@ static void updateToNextState(NodeContainer &RF_AP_node,
             cal += 1;
             total_active_UE_satis += UE_final_satisfaction_vector[i];
         }
+    }*/
+
+    // URLLC user avg satisfaction (new)
+    double urllc_UE_statis = 0;
+    double urllc_active_UE_satis = 0;
+    int urllc_cal = 0;
+    for(int i = 0 ; i < UE_num ; i++){
+        if(my_UE_list[i].getGroup() == 1){
+            urllc_UE_statis += UE_final_satisfaction_vector[i];
+            if(UE_final_satisfaction_vector[i] != 0){
+                urllc_cal += 1;
+                urllc_active_UE_satis += UE_final_satisfaction_vector[i];
+            }
+        }
     }
 
-    recorded_average_satisfaction[state] = (double) total_UE_satis / UE_num;
-    recorded_average_active_satisfaction[state] = (double) total_active_UE_satis / cal;
+    // normal user avg satisfaction (new)
+    double normal_UE_satis = 0;
+    double normal_active_UE_satis = 0;
+    int normal_cal = 0;
+    for(int i = 0 ; i < UE_num ; i++){
+        if(my_UE_list[i].getGroup() == 2){
+            normal_UE_satis += UE_final_satisfaction_vector[i];
+            if(UE_final_satisfaction_vector[i] != 0){
+                normal_cal += 1;
+                normal_active_UE_satis += UE_final_satisfaction_vector[i];
+            }
+        }
+    }
+
+    recorded_average_urllc_satisfaction[state] = urllc_UE_statis / urllc_UE_num;
+    recorded_average_urllc_active_satisfaction[state] = urllc_active_UE_satis / urllc_cal;
+
+    recorded_average_normal_satisfaction[state] = normal_UE_satis / ((double)UE_num - urllc_UE_num);
+    recorded_average_normal_active_satisfaction[state] = normal_active_UE_satis / normal_cal;
+    double urllc_percentage = urllc_UE_num / (double)UE_num;
+    double normal_percentage = (UE_num - urllc_UE_num) / (double)UE_num;
+
+    recorded_average_satisfaction[state] = (urllc_percentage*recorded_average_urllc_satisfaction[state]) + (normal_percentage*recorded_average_normal_satisfaction[state]);
+    recorded_average_active_satisfaction[state] = (urllc_percentage*recorded_average_urllc_satisfaction[state]) + (normal_percentage*recorded_average_normal_active_satisfaction[state]);
+
 
     total_ue_satisfaction += recorded_average_satisfaction[state];
     ue_satisfaction = total_ue_satisfaction / (state+1);
@@ -305,9 +342,9 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     total_active_ue_satisfaction += recorded_average_active_satisfaction[state];
     active_ue_satisfaction = total_active_ue_satisfaction / (state+1);
 
-#if DEBUG_MODE
-    /* user satisfaction & active user satisfaction file output */
-    std::string path1 = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+#if DEBUG_MODE // satisfaction & active user satisfaction file output
+    // total user
+    /*std::string path1 = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
     std::fstream output1;
 
     output1.open(path1 + "satisfaction_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
@@ -318,10 +355,38 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     else{
         output1 << recorded_average_satisfaction[state] << "," << recorded_average_active_satisfaction[state] << std::endl ;
     }
-    output1.close();
+    output1.close();*/
+
+    // urllc user
+    std::string path2 = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+    std::fstream output2;
+
+    output2.open(path2 + "urllc_satisfaction_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    if (!output2.is_open()) {
+        std::cout << "Fail to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        output2 << recorded_average_urllc_satisfaction[state] << "," << recorded_average_urllc_active_satisfaction[state] << std::endl ;
+    }
+    output2.close();
+
+    // normal
+    std::string path3 = (PROPOSED_METHOD) ? "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/proposed/" : "/home/yu/repos/ns-3-allinone/ns-3.25/scratch/thesis/benchmark/";
+    std::fstream output3;
+
+    output3.open(path3 + "normal_satisfaction_UE=" + std::to_string(UE_num) + ".csv", std::ios::out | std::ios::app);
+    if (!output3.is_open()) {
+        std::cout << "Fail to open file\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        output3 << recorded_average_normal_satisfaction[state] << "," << recorded_average_normal_active_satisfaction[state] << std::endl ;
+    }
+    output3.close();
 
 #endif // DEBUG_MODE
-
+    std::cout << "state : " << state << "\n";
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
     std::cout << "one state avg satisfaction (old): "<<recorded_average_old_satisfaction[state] << std::endl;
     std::cout << "one state avg satisfaction (new): "<<recorded_average_satisfaction[state] << std::endl;
@@ -332,7 +397,6 @@ static void updateToNextState(NodeContainer &RF_AP_node,
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
     state++;
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -381,12 +445,6 @@ int main(int argc, char *argv[])
 
     // end time
     clock_gettime(CLOCK_MONOTONIC, &end);
-
-
-
-    /*
-     * AFTER SIMULATION, CALCULATE OVERALL AVERAGE OUTAGE PROBABILITY, AVERAGE DATA RATE //2//
-     */
 
     // overall avg. outage probability
     double avg_outage_probability = 0.0;
@@ -442,10 +500,6 @@ int main(int argc, char *argv[])
 
     std::cout << "In this simulation :(" << method << "), UE=" << std::to_string(UE_num) << ", execution time: " << exec_time << std::endl << std::endl;
 
-    /*
-     * OUTPUT THE RESULTS TO .CSV FILES
-     */
-
     std::fstream output;
     if(LASINR || LAEQOS){
         output.open(path + method + ",UE=" + std::to_string(UE_num) + ",LA=" + std::to_string(LA_UE_num) + ".csv", std::ios::out | std::ios::app);
@@ -459,7 +513,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     else{
-        output << avg_outage_probability << "," << avg_old_satisfaction << "," << avg_new_satisfaction << "," << avg_data_rate;
+        if(LASINR || LAEQOS){
+            output << avg_outage_probability << "," << avg_old_satisfaction << "," << avg_data_rate << "," << exec_time;
+        }
+        else{
+            output << avg_outage_probability << "," << avg_new_satisfaction << "," << avg_data_rate << "," << exec_time;
+        }
         output << std::endl;
     }
     output.close();

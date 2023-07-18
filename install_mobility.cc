@@ -94,8 +94,12 @@ void installUeMobility(NodeContainer &UE_nodes) {
     pos.SetTypeId("ns3::RandomBoxPositionAllocator");
 
     std::stringstream ssPos;
-    ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
-
+    if(SUPER_DYNAMIC){
+        ssPos << "ns3::UniformRandomVariable[Min=" << -room_size << "|Max=" << room_size << "]";
+    }
+    else{
+        ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
+    }
     // set an attribute to be set during construction
     pos.Set("X", StringValue(ssPos.str()));
     pos.Set("Y", StringValue(ssPos.str()));
@@ -133,11 +137,9 @@ void installUeMobility(NodeContainer &UE_nodes) {
         for (NodeContainer::Iterator it = UE_nodes.Begin(); it != UE_nodes.End(); ++it) {
             if(i < urllc_UE_num){
                 UE_mobility_static.Install((*it));
-                //std::cout << i << " : static \n" ;
             }
             else{
                 UE_mobility_dynamic.Install((*it));
-                //std::cout << i << " : dynamic \n" ;
             }
             i++;
         }
