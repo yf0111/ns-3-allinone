@@ -95,6 +95,7 @@ std::vector<double> UE_final_data_rate_vector(UE_num , 0.0);
 std::vector<double> UE_require_data_rate(UE_num , 0.0);
 std::vector<double> UE_final_satisfaction_vector(UE_num,0.0);
 std::vector<std::vector<double>> AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0)); // save allocate power for each UE (%)
+std::vector<int> indoor_user_index;
 /*
     performance evaluation
 */
@@ -107,8 +108,8 @@ std::vector<double> recorded_average_urllc_satisfaction(state_num,0.0); // URLLC
 std::vector<double> recorded_average_urllc_active_satisfaction(state_num,0.0); // URLLC active user average satisfaction
 std::vector<double> recorded_average_normal_satisfaction(state_num,0.0); //normal user average satisfaction
 std::vector<double> recorded_average_normal_active_satisfaction(state_num,0.0); // normal active user average satisfaciton
-
-
+std::vector<double> recorded_average_jain_fairness_index(state_num,0.0); // jain's fairness index
+std::vector<int> recorded_indoor_user_num(state_num,0); // number of indoor user
 
 static const uint32_t totalTxBytes = 10000000;
 static uint32_t currentTxBytes = 0;
@@ -170,6 +171,7 @@ static void initialize() {
     UE_final_satisfaction_vector = std::vector<double>(UE_num,0.0);
     UE_require_data_rate = std::vector<double>(UE_num,0.0);
     AP_allocate_power = std::vector<std::vector<double>> (RF_AP_num + VLC_AP_num , std::vector<double> (UE_num,0.0));
+    indoor_user_index.clear();
 
     recorded_average_outage_probability = std::vector<double>(state_num,0.0);
     recorded_average_data_rate = std::vector<double>(state_num,0.0);
@@ -180,6 +182,8 @@ static void initialize() {
     recorded_average_urllc_active_satisfaction = std::vector<double>(state_num,0.0);
     recorded_average_normal_satisfaction = std::vector<double>(state_num,0.0);
     recorded_average_normal_active_satisfaction = std::vector<double>(state_num,0.0);
+    recorded_average_jain_fairness_index = std::vector<double>(state_num,0.0);
+    recorded_indoor_user_num = std::vector<int>(state_num,0);
 }
 
 static struct timespec diff(struct timespec start, struct timespec end) {
@@ -204,32 +208,43 @@ static void updateToNextState(NodeContainer &RF_AP_node,
 {
 
 #if PROPOSED_METHOD
-
     proposedLB(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
-                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,ue_satisfaction,AP_allocate_power,active_ue_satisfaction);
+                        AP_association_matrix, my_UE_list,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,
+                        ue_satisfaction,AP_allocate_power,active_ue_satisfaction,indoor_user_index);
 
 #else
     benchmarkMethod(state, RF_AP_node, VLC_AP_nodes, UE_nodes,
                        VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
                        RF_channel_gain_vector, RF_SINR_vector, RF_data_rate_vector,
                         AP_association_matrix, my_UE_list,UE_final_data_rate_vector,
-                        UE_final_satisfaction_vector,UE_require_data_rate);
+                        UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
 #endif
 
 
     /* CALCULATION OF PERFORMANCE METRICS */
+    double indoor_user = (SUPER_DYNAMIC)? indoor_user_index.size() : UE_num;
 
     // UE average outage probability
     int outage_UE_number = 0;
-    for(int i = 0 ; i < UE_num ; i++){
-        double thre = UE_require_data_rate[i];
-        if(UE_final_data_rate_vector[i] < thre){
-            outage_UE_number += 1;
+    if(SUPER_DYNAMIC){
+        for(int i = 0 ; i < indoor_user_index.size() ; i++){
+            double thre = UE_require_data_rate[indoor_user_index[i]];
+            if(UE_final_data_rate_vector[indoor_user_index[i]] < thre){
+                outage_UE_number += 1;
+            }
         }
     }
-    recorded_average_outage_probability[state] = (double) outage_UE_number / UE_num;
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            double thre = UE_require_data_rate[i];
+            if(UE_final_data_rate_vector[i] < thre){
+                outage_UE_number += 1;
+            }
+        }
+    }
+    recorded_average_outage_probability[state] = (double) outage_UE_number / indoor_user;
 
 #if DEBUG_MODE // outage user file output
     double avg_speed = 0.0;
@@ -265,72 +280,105 @@ static void updateToNextState(NodeContainer &RF_AP_node,
         }
     }
     output.close();
-
 #endif // DEBUG_MODE
 
     // UE average data rate
     double total_UE_data_rate = 0;
-    for(int i = 0 ; i < UE_num ; i++){
-        total_UE_data_rate += UE_final_data_rate_vector[i];
+    if(SUPER_DYNAMIC){
+        for(int i = 0 ; i < indoor_user_index.size() ; i++){
+            total_UE_data_rate += UE_final_data_rate_vector[indoor_user_index[i]];
+        }
     }
-    recorded_average_data_rate[state] = (double) total_UE_data_rate / UE_num;
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            total_UE_data_rate += UE_final_data_rate_vector[i];
+        }
+    }
+    recorded_average_data_rate[state] = (double) total_UE_data_rate / indoor_user;
 
     // UE average satisfaction (old)
     double total_ue_old_satis = 0;
-    for (int i = 0 ; i < UE_num ; i++){
-        double temp = (double) UE_final_data_rate_vector[i] / UE_require_data_rate[i];
-        temp = std::min(temp,1.0);
-        total_ue_old_satis += temp;
-    }
-    recorded_average_old_satisfaction[state] = (double) total_ue_old_satis / UE_num;
-
-    // UE average satisfaction (new)
-    /*double total_UE_satis = 0;
-    double total_active_UE_satis = 0;
-    int cal = 0;
-    for(int i = 0 ; i < UE_num ; i++){
-        total_UE_satis += UE_final_satisfaction_vector[i];
-        if(UE_final_satisfaction_vector[i] != 0 ){
-            cal += 1;
-            total_active_UE_satis += UE_final_satisfaction_vector[i];
+    if(SUPER_DYNAMIC){
+        for (int i = 0 ; i < indoor_user_index.size() ; i++){
+            double temp = (double) UE_final_data_rate_vector[indoor_user_index[i]] / UE_require_data_rate[indoor_user_index[i]];
+            temp = std::min(temp,1.0);
+            total_ue_old_satis += temp;
         }
-    }*/
+    }
+    else{
+        for (int i = 0 ; i < UE_num ; i++){
+            double temp = (double) UE_final_data_rate_vector[i] / UE_require_data_rate[i];
+            temp = std::min(temp,1.0);
+            total_ue_old_satis += temp;
+        }
+    }
+    recorded_average_old_satisfaction[state] = (double) total_ue_old_satis / indoor_user;
 
     // URLLC user avg satisfaction (new)
     double urllc_UE_statis = 0;
     double urllc_active_UE_satis = 0;
     int urllc_cal = 0;
-    for(int i = 0 ; i < UE_num ; i++){
-        if(my_UE_list[i].getGroup() == 1){
-            urllc_UE_statis += UE_final_satisfaction_vector[i];
-            if(UE_final_satisfaction_vector[i] != 0){
-                urllc_cal += 1;
-                urllc_active_UE_satis += UE_final_satisfaction_vector[i];
+    if(SUPER_DYNAMIC){
+        for(int i = 0 ; i < indoor_user_index.size() ; i++){
+            if(my_UE_list[indoor_user_index[i]].getGroup() == 1){
+                urllc_UE_statis += UE_final_satisfaction_vector[indoor_user_index[i]];
+                if(UE_final_satisfaction_vector[indoor_user_index[i]] != 0){
+                    urllc_cal += 1;
+                    urllc_active_UE_satis += UE_final_satisfaction_vector[indoor_user_index[i]];
+                }
             }
         }
     }
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            if(my_UE_list[i].getGroup() == 1){
+                urllc_UE_statis += UE_final_satisfaction_vector[i];
+                if(UE_final_satisfaction_vector[i] != 0){
+                    urllc_cal += 1;
+                    urllc_active_UE_satis += UE_final_satisfaction_vector[i];
+                }
+            }
+        }
+    }
+
 
     // normal user avg satisfaction (new)
     double normal_UE_satis = 0;
     double normal_active_UE_satis = 0;
     int normal_cal = 0;
-    for(int i = 0 ; i < UE_num ; i++){
-        if(my_UE_list[i].getGroup() == 2){
-            normal_UE_satis += UE_final_satisfaction_vector[i];
-            if(UE_final_satisfaction_vector[i] != 0){
-                normal_cal += 1;
-                normal_active_UE_satis += UE_final_satisfaction_vector[i];
+    if(SUPER_DYNAMIC){
+        for(int i = 0 ; i < indoor_user_index.size() ; i++){
+            if(my_UE_list[indoor_user_index[i]].getGroup() == 2){
+                normal_UE_satis += UE_final_satisfaction_vector[indoor_user_index[i]];
+                if(UE_final_satisfaction_vector[indoor_user_index[i]] != 0){
+                    normal_cal += 1;
+                    normal_active_UE_satis += UE_final_satisfaction_vector[indoor_user_index[i]];
+                }
+            }
+        }
+    }
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            if(my_UE_list[i].getGroup() == 2){
+                normal_UE_satis += UE_final_satisfaction_vector[i];
+                if(UE_final_satisfaction_vector[i] != 0){
+                    normal_cal += 1;
+                    normal_active_UE_satis += UE_final_satisfaction_vector[i];
+                }
             }
         }
     }
 
-    recorded_average_urllc_satisfaction[state] = urllc_UE_statis / urllc_UE_num;
-    recorded_average_urllc_active_satisfaction[state] = urllc_active_UE_satis / urllc_cal;
 
-    recorded_average_normal_satisfaction[state] = normal_UE_satis / ((double)UE_num - urllc_UE_num);
-    recorded_average_normal_active_satisfaction[state] = normal_active_UE_satis / normal_cal;
-    double urllc_percentage = urllc_UE_num / (double)UE_num;
-    double normal_percentage = (UE_num - urllc_UE_num) / (double)UE_num;
+    recorded_average_urllc_satisfaction[state] = (urllc_UE_statis == 0)? 0:urllc_UE_statis / urllc_UE_num;
+    recorded_average_urllc_active_satisfaction[state] = (urllc_active_UE_satis == 0)? 0:urllc_active_UE_satis / urllc_cal;
+
+    recorded_average_normal_satisfaction[state] = (normal_UE_satis == 0) ? 0:normal_UE_satis / (indoor_user - urllc_UE_num);
+    recorded_average_normal_active_satisfaction[state] = (normal_active_UE_satis == 0)? 0:normal_active_UE_satis / normal_cal;
+
+
+    double urllc_percentage = urllc_UE_num / indoor_user;
+    double normal_percentage = (indoor_user - urllc_UE_num) / indoor_user;
 
     recorded_average_satisfaction[state] = (urllc_percentage*recorded_average_urllc_satisfaction[state]) + (normal_percentage*recorded_average_normal_satisfaction[state]);
     recorded_average_active_satisfaction[state] = (urllc_percentage*recorded_average_urllc_satisfaction[state]) + (normal_percentage*recorded_average_normal_active_satisfaction[state]);
@@ -386,12 +434,53 @@ static void updateToNextState(NodeContainer &RF_AP_node,
     output3.close();
 
 #endif // DEBUG_MODE
+
+    // jain's fairness index
+    double top = 0;
+    double bottom = 0;
+    if(SUPER_DYNAMIC){
+        for(int i = 0 ; i < indoor_user_index.size() ; i++){
+            if(LASINR || LAEQOS){
+                double temp = (double) UE_final_data_rate_vector[indoor_user_index[i]] / UE_require_data_rate[indoor_user_index[i]];
+                temp = std::min(temp,1.0);
+                top += temp;
+                bottom += std::pow(temp,2);
+            }
+            if(PROPOSED_METHOD){
+                top += UE_final_satisfaction_vector[indoor_user_index[i]];
+                bottom += std::pow(UE_final_satisfaction_vector[indoor_user_index[i]],2);
+            }
+        }
+    }
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            if(LASINR || LAEQOS){
+                double temp = (double) UE_final_data_rate_vector[i] / UE_require_data_rate[i];
+                temp = std::min(temp,1.0);
+                top += temp;
+                bottom += std::pow(temp,2);
+            }
+            if(PROPOSED_METHOD){
+                top += UE_final_satisfaction_vector[i];
+                bottom += std::pow(UE_final_satisfaction_vector[i],2);
+            }
+        }
+    }
+    top = std::pow(top,2);
+    bottom = bottom * indoor_user;
+    recorded_average_jain_fairness_index[state] = top / bottom;
+
+    // number of indoor user
+    recorded_indoor_user_num[state] = indoor_user;
+
     std::cout << "state : " << state << "\n";
     std::cout << "one state avg outage: "<<recorded_average_outage_probability[state] << std::endl;
     std::cout << "one state avg satisfaction (old): "<<recorded_average_old_satisfaction[state] << std::endl;
     std::cout << "one state avg satisfaction (new): "<<recorded_average_satisfaction[state] << std::endl;
     std::cout << "one state avg activate satisfaction: " <<recorded_average_active_satisfaction[state] << std::endl;
-    std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl<<std::endl;
+    std::cout << "one state avg data rate: "<<recorded_average_data_rate[state] << std::endl;
+    std::cout << "one state jain's fairness index:" << recorded_average_jain_fairness_index[state] << std::endl;
+    std::cout << "one state number of indoor user:" << recorded_indoor_user_num[state] << std::endl<<std::endl;
 
     if (!Simulator::IsFinished())
         Simulator::Schedule(Seconds(time_period), &updateToNextState, RF_AP_node, VLC_AP_nodes, UE_nodes, my_UE_list);
@@ -429,7 +518,6 @@ int main(int argc, char *argv[])
 #if DEBUG_MODE
     printUePosition(UE_nodes);
 #endif
-
 
     std::vector<MyUeNode> my_UE_list = initializeMyUeNodeList(UE_nodes);
 
@@ -475,14 +563,30 @@ int main(int argc, char *argv[])
     }
     avg_data_rate = avg_data_rate / state_num;
 
-
-    std::cout << "overall avg outage: "<< avg_outage_probability << std::endl;
-    std::cout << "overall avg satisfaction: "<<avg_new_satisfaction << std::endl;
-    std::cout << "overall avg data rate: "<< avg_data_rate << std::endl<<std::endl;
-
     // calculate the actual executing time
     struct timespec tmp = diff(start, end);
     double exec_time = tmp.tv_sec + (double) tmp.tv_nsec / 1000000000.0;
+
+    // overall avg. jain's fairness index
+    double avg_jain_fairness_index = 0.0;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_jain_fairness_index += recorded_average_jain_fairness_index[i];
+    }
+    avg_jain_fairness_index = avg_jain_fairness_index / state_num;
+
+    // overall avg number of indoor user
+    double avg_indoor_user = 0.0;
+    for(int i = 0 ; i < state_num ; i++){
+        avg_indoor_user += recorded_indoor_user_num[i];
+    }
+    avg_indoor_user = avg_indoor_user / state_num;
+
+
+    std::cout << "overall avg outage: "<< avg_outage_probability << std::endl;
+    std::cout << "overall avg satisfaction: "<<avg_new_satisfaction << std::endl;
+    std::cout << "overall avg data rate: "<< avg_data_rate << std::endl;
+    std::cout << "overall avg jain's fairness index:" << avg_jain_fairness_index << std::endl;
+    std::cout << "overall avg number of indoor user:" << avg_indoor_user << std::endl<<std::endl;
 
 
     std::string method;
@@ -514,10 +618,13 @@ int main(int argc, char *argv[])
     }
     else{
         if(LASINR || LAEQOS){
-            output << avg_outage_probability << "," << avg_old_satisfaction << "," << avg_data_rate << "," << exec_time;
+            output << avg_outage_probability << "," << avg_old_satisfaction << "," << avg_data_rate << "," << exec_time << "," << avg_jain_fairness_index;
         }
         else{
-            output << avg_outage_probability << "," << avg_new_satisfaction << "," << avg_data_rate << "," << exec_time;
+            output << avg_outage_probability << "," << avg_new_satisfaction << "," << avg_data_rate << "," << exec_time << "," << avg_jain_fairness_index;
+        }
+        if(SUPER_DYNAMIC){
+            output << "," << avg_indoor_user;
         }
         output << std::endl;
     }

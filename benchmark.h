@@ -21,7 +21,8 @@ void benchmarkMethod(int &state,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
                      std::vector<double> &UE_final_satisfaction_vector,
-                     std::vector<double> &UE_require_data_rate);
+                     std::vector<double> &UE_require_data_rate,
+                     std::vector<int> &indoor_user_index);
 
 void RL_LB(std::vector<std::vector<int>> &AP_association_matrix,
            std::vector<double> &RF_SINR_vector,
@@ -39,7 +40,8 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<double> &UE_final_satisfaction_vector,
-             std::vector<double> &UE_require_data_rate);
+             std::vector<double> &UE_require_data_rate,
+             std::vector<int> &indoor_user_index);
 
 void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &RF_SINR_vector,
@@ -47,7 +49,8 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<double> &UE_final_satisfaction_vector,
-             std::vector<double> &UE_require_data_rate);
+             std::vector<double> &UE_require_data_rate,
+             std::vector<int> &indoor_user_index);
 
 double getSpectralEfficiency(double SINR);
 

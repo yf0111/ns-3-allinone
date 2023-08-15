@@ -28,7 +28,7 @@ void printVlcApPosition(ns3::NodeContainer &VLC_AP_nodes);
 
 void printUePosition(ns3::NodeContainer &UE_nodes);
 
-void printUEVelocity(ns3::NodeContainer &VLC_AP_nodes);
+void printUeVelocity(ns3::NodeContainer &VLC_AP_nodes);
 
 void printUePosition(std::vector<MyUeNode> &my_UE_list);
 
@@ -36,6 +36,7 @@ void printMyUeList(std::vector<MyUeNode> &my_UE_list);
 
 void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers);
 
-void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector);
+void printUeFinalDataRate(std::vector<double> &UE_final_data_rate_vector);
 
+void printIndoorUeIndex(std::vector<int> &indoor_user_index);
 #endif

@@ -26,7 +26,8 @@ void proposedLB(int &state,
                 std::vector<double> &UE_require_data_rate,
                 double ue_satisfaction,
                 std::vector<std::vector<double>> &AP_allocate_power,
-                double active_ue_satisfaction);
+                double active_ue_satisfaction,
+                std::vector<int> &indoor_user_index);
 
 void RA(std::vector<std::vector<double>> &AP_allocate_power,
         std::vector<std::vector<int>> &local_AP_association_matrix,
@@ -38,7 +39,8 @@ void RA(std::vector<std::vector<double>> &AP_allocate_power,
 void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
          std::vector<std::vector<int>> &AP_association_matrix,
          std::vector<MyUeNode> &my_UE_list,
-         NodeContainer &UE_nodes);
+         NodeContainer &UE_nodes,
+         std::vector<int> &indoor_user_index);
 
 void RRA(std::vector<std::vector<int>> &AP_association_matrix,
          std::vector<std::vector<double>> &AP_allocate_power);
@@ -47,7 +49,8 @@ void RAPS(std::vector<std::vector<double>> &VLC_LOS_matrix,
           std::vector<double> &final_data_rate,
           std::vector<double> &require_data_rate,
           std::vector<std::vector<int>> &AP_association_matrix,
-          std::vector<std::vector<double>> AP_allocate_power);
+          std::vector<std::vector<double>> AP_allocate_power,
+          std::vector<int> &indoor_user_index);
 
 void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<MyUeNode> &my_UE_list,
@@ -60,7 +63,8 @@ void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<double> &UE_final_data_rate_vector,
                      std::vector<double> &UE_final_satisfaction_vector,
-                     std::vector<double> &UE_require_data_rate);
+                     std::vector<double> &UE_require_data_rate,
+                     std::vector<int> &indoor_user_index);
 
 double cal_minumum_allocate_power_percentage(std::vector<double> &UE_require_data_rate,
                                            std::vector<double> &RF_channel_gain_vector,

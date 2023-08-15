@@ -170,7 +170,7 @@ void printUePosition(ns3::NodeContainer &UE_nodes) {
     std::cout << std::endl;
 }
 
-void printUEVelocity(ns3::NodeContainer &UE_nodes){
+void printUeVelocity(ns3::NodeContainer &UE_nodes){
     int UE_index = 0;
     for (NodeContainer::Iterator it = UE_nodes.Begin(); it != UE_nodes.End(); ++it) {
         Ptr<MobilityModel> UE_mobility_model = (*it)->GetObject<MobilityModel>();
@@ -222,7 +222,7 @@ void printAPServeUENum(std::vector<int> &AP_serve_UE_numbers){
     std::cout<<std::endl;
 }
 
-void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
+void printUeFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
     std::cout<<"UE final data rate as below : "<<std::endl;
     for(int i=0;i<UE_num;i++){
         std::cout<<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<"UE "<<i<<" data rate is :"<<UE_final_data_rate_vector[i]<<"\n";
@@ -230,3 +230,10 @@ void printUEFinalDataRate(std::vector<double> &UE_final_data_rate_vector){
     std::cout<<std::endl;
 }
 
+void printIndoorUeIndex(std::vector<int> &indoor_user_index){
+    std::cout << "indoor number of users:" << indoor_user_index.size() << ", index:";
+    for(int i = 0 ; i < indoor_user_index.size(); i++){
+        std::cout << indoor_user_index[i] << " ";
+    }
+    std::cout << "\n";
+}

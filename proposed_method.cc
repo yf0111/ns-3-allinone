@@ -36,17 +36,13 @@ void proposedLB(int &state,
                 std::vector<double> &UE_require_data_rate,
                 double ue_satisfation,
                 std::vector<std::vector<double>> &AP_allocate_power,
-                double active_ue_satisfaction)
+                double active_ue_satisfaction,
+                std::vector<int> &indoor_user_index)
 {
-    /*std::vector<int> indoor_user_index;
+    int indoor_user_num = indoor_user_index.size();
     check_indoor_user(my_UE_list,indoor_user_index);
-    std::cout << "indoor number of users:" << indoor_user_index.size() << ", index:";
-    for(int i = 0 ; i < indoor_user_index.size(); i++){
-        std::cout << indoor_user_index[i] << " ";
-    }
-    std::cout << "\n";*/
-
-
+    bool flag = (indoor_user_num != indoor_user_index.size())? true:false;
+    //printIndoorUeIndex(indoor_user_index);
 
     precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
                    VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
@@ -56,18 +52,21 @@ void proposedLB(int &state,
     // initialize
     UE_require_data_rate = createUEDemandVector(my_UE_list);
 
-    if(ue_satisfation - active_ue_satisfaction < 0.035){
-        APS(VLC_SINR_matrix,AP_association_matrix,my_UE_list,UE_nodes);
+    if(ue_satisfation - active_ue_satisfaction < 0.035 || flag){
+        APS(VLC_SINR_matrix,AP_association_matrix,my_UE_list,UE_nodes,indoor_user_index);
         RA(AP_allocate_power,AP_association_matrix,UE_require_data_rate,RF_channel_gain_vector,VLC_LOS_matrix,my_UE_list);
-        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
-        RAPS(VLC_LOS_matrix,UE_final_data_rate_vector,UE_require_data_rate,AP_association_matrix,AP_allocate_power);
+        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
+        RAPS(VLC_LOS_matrix,UE_final_data_rate_vector,UE_require_data_rate,AP_association_matrix,AP_allocate_power,indoor_user_index);
         RA(AP_allocate_power,AP_association_matrix,UE_require_data_rate,RF_channel_gain_vector,VLC_LOS_matrix,my_UE_list);
         updateApAssociationResult(AP_association_matrix,my_UE_list);
-        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
+        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
     }
     else{
-        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate);
+        cal_performance(AP_association_matrix,my_UE_list,AP_allocate_power,VLC_LOS_matrix,VLC_SINR_matrix,VLC_data_rate_matrix,RF_channel_gain_vector,RF_SINR_vector,RF_data_rate_vector,UE_final_data_rate_vector,UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
     }
+    /*printApAssociationMatrix(AP_association_matrix);
+    printApAllocatePowerMatrix(AP_allocate_power);
+    printUeFinalDataRate(UE_final_data_rate_vector);*/
 
 
 #if DEBUG_MODE // AP load
@@ -91,7 +90,8 @@ void proposedLB(int &state,
 void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
          std::vector<std::vector<int>> &AP_association_matrix,
          std::vector<MyUeNode> &my_UE_list,
-         NodeContainer &UE_nodes){
+         NodeContainer &UE_nodes,
+         std::vector<int> &indoor_user_index){
 
     // [Wi-Fi : high speed normal device] [Li-Fi : other normal device and urllc device]
     AP_association_matrix = std::vector<std::vector<int>> (RF_AP_num + VLC_AP_num, std::vector<int> (UE_num, 0));
@@ -103,24 +103,41 @@ void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
         my_UE_list[i++].setVelocity(new_velocity);
     }
 
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        if(my_UE_list[UE_index].getGroup() == 1){
-            int max_AP_index = 0;
-            double max_AP_value = -DBL_MAX;
-            for(int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
-                if(VLC_SINR_matrix[VLC_AP_index][UE_index]!= 0 && VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_value){
-                    max_AP_index = VLC_AP_index + 1;
-                    max_AP_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            if(my_UE_list[indoor_user_index[index]].getGroup() == 1){
+                int max_AP_index = 0;
+                double max_AP_value = -DBL_MAX;
+                for(int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                    if(VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]]!=0 && VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]] > max_AP_value){
+                        max_AP_index = VLC_AP_index + 1;
+                        max_AP_value = VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]];
+                    }
+                }
+                AP_association_matrix[max_AP_index][indoor_user_index[index]] = 1;
+            }
+            if(my_UE_list[indoor_user_index[index]].getGroup() == 2){
+                double speed = my_UE_list[indoor_user_index[index]].getVelocity();
+                if(speed > speed_threshold){
+                    AP_association_matrix[0][indoor_user_index[index]] = 1;
+                }
+                else{
+                    int max_AP_index = 0;
+                    double max_AP_value = -DBL_MAX;
+                    for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                        if(VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]]!=0 && VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]] > max_AP_value){
+                            max_AP_index = VLC_AP_index + 1;
+                            max_AP_value = VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]];
+                        }
+                    }
+                    AP_association_matrix[max_AP_index][indoor_user_index[index]] = 1;
                 }
             }
-            AP_association_matrix[max_AP_index][UE_index] = 1;
         }
-        if(my_UE_list[UE_index].getGroup() == 2){
-            double speed = my_UE_list[UE_index].getVelocity();
-            if(speed > speed_threshold){
-                AP_association_matrix[0][UE_index] = 1;
-            }
-            else{
+    }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            if(my_UE_list[UE_index].getGroup() == 1){
                 int max_AP_index = 0;
                 double max_AP_value = -DBL_MAX;
                 for(int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
@@ -131,9 +148,25 @@ void APS(std::vector<std::vector<double>> &VLC_SINR_matrix,
                 }
                 AP_association_matrix[max_AP_index][UE_index] = 1;
             }
+            if(my_UE_list[UE_index].getGroup() == 2){
+                double speed = my_UE_list[UE_index].getVelocity();
+                if(speed > speed_threshold){
+                    AP_association_matrix[0][UE_index] = 1;
+                }
+                else{
+                    int max_AP_index = 0;
+                    double max_AP_value = -DBL_MAX;
+                    for(int VLC_AP_index = 0; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                        if(VLC_SINR_matrix[VLC_AP_index][UE_index]!= 0 && VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_value){
+                            max_AP_index = VLC_AP_index + 1;
+                            max_AP_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+                        }
+                    }
+                    AP_association_matrix[max_AP_index][UE_index] = 1;
+                }
+            }
         }
     }
-
 }
 
 void RA(std::vector<std::vector<double>> &AP_allocate_power,
@@ -199,26 +232,30 @@ void RAPS(std::vector<std::vector<double>> &VLC_LOS_matrix,
           std::vector<double> &final_data_rate,
           std::vector<double> &require_data_rate,
           std::vector<std::vector<int>> &AP_association_matrix,
-          std::vector<std::vector<double>> AP_allocate_power){
-
+          std::vector<std::vector<double>> AP_allocate_power,
+          std::vector<int> &indoor_user_index){
     std::vector<int> AP_serve_UE_num = AP_association_matrix_to_UE_numbers(AP_association_matrix);
 
     // Link Aggregation
     std::vector<std::pair<int,double>> wifi_ee; // <user index, ee>
     wifi_ee.clear();
-
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        wifi_ee.push_back(std::make_pair(UE_index,require_data_rate[UE_index] / user_need_power_rf[UE_index]));
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            wifi_ee.push_back(std::make_pair(indoor_user_index[index],require_data_rate[indoor_user_index[index]] / user_need_power_rf[indoor_user_index[index]]));
+        }
+    }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            wifi_ee.push_back(std::make_pair(UE_index,require_data_rate[UE_index] / user_need_power_rf[UE_index]));
+        }
     }
     sort(wifi_ee.begin(),wifi_ee.end(),sort_by_sec_descending);
-
     double wifi_total_allocate = 0;
     for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
         wifi_total_allocate += AP_allocate_power[0][UE_index];
     }
-
     int index = 0;
-    while(wifi_total_allocate < RF_AP_power && AP_serve_UE_num[0] < wifi_threshold && index < wifi_threshold){
+    while(wifi_total_allocate < RF_AP_power && AP_serve_UE_num[0] < wifi_threshold && index < wifi_ee.size()){
         AP_association_matrix[0][wifi_ee[index].first] = 1;
         index++;
         AP_serve_UE_num = AP_association_matrix_to_UE_numbers(AP_association_matrix);
@@ -282,7 +319,9 @@ void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
                      std::vector<double> &RF_data_rate_vector,
                      std::vector<double> &UE_final_data_rate_vector,
                      std::vector<double> &UE_final_satisfaction_vector,
-                     std::vector<double> &UE_require_data_rate){
+                     std::vector<double> &UE_require_data_rate,
+                     std::vector<int> &indoor_user_index){
+
     // calculate final UE data rate
     std::vector<int> AP_serve_num = AP_association_matrix_to_UE_numbers(AP_association_matrix);
     updateAllRFSINR(RF_SINR_vector,RF_channel_gain_vector,AP_allocate_power);
@@ -322,19 +361,37 @@ void cal_performance(std::vector<std::vector<int>> &AP_association_matrix,
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
     cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate,US_latency,US_reliability,my_UE_list);
 
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
-            UE_final_satisfaction_vector[UE_index] = 0;
-        }
-        else{
-            if(my_UE_list[UE_index].getGroup() == 1){ // urllc 0.4:0.3:0.3
-                UE_final_satisfaction_vector[UE_index] = (0.5 * US_reliability[UE_index]) + (0.4 * US_latency[UE_index]) + (0.1 * US_datarate[UE_index]);
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            if(UE_final_data_rate_vector[indoor_user_index[index]] < UE_require_data_rate[indoor_user_index[index]]){
+                UE_final_data_rate_vector[indoor_user_index[index]] = 0;
             }
-            if(my_UE_list[UE_index].getGroup() == 2){ // normal 0.3:0.2:0.5
-                UE_final_satisfaction_vector[UE_index] = (0.3 * US_reliability[UE_index]) + (0.2 * US_latency[UE_index]) + (0.5 * US_datarate[UE_index]);
+            else{
+                if(my_UE_list[indoor_user_index[index]].getGroup() == 1){
+                    UE_final_satisfaction_vector[indoor_user_index[index]] = (0.4 * US_reliability[indoor_user_index[index]]) + (0.3 * US_latency[indoor_user_index[index]]) + (0.3 * US_datarate[indoor_user_index[index]]);
+                }
+                if(my_UE_list[indoor_user_index[index]].getGroup() == 2){
+                    UE_final_satisfaction_vector[indoor_user_index[index]] = (0.3 * US_reliability[indoor_user_index[index]]) + (0.2 * US_latency[indoor_user_index[index]]) + (0.5 * US_datarate[indoor_user_index[index]]);
+                }
             }
         }
     }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
+                UE_final_satisfaction_vector[UE_index] = 0;
+            }
+            else{
+                if(my_UE_list[UE_index].getGroup() == 1){ // urllc 0.4:0.3:0.3
+                    UE_final_satisfaction_vector[UE_index] = (0.4 * US_reliability[UE_index]) + (0.3 * US_latency[UE_index]) + (0.3 * US_datarate[UE_index]);
+                }
+                if(my_UE_list[UE_index].getGroup() == 2){ // normal 0.3:0.2:0.5
+                    UE_final_satisfaction_vector[UE_index] = (0.3 * US_reliability[UE_index]) + (0.2 * US_latency[UE_index]) + (0.5* US_datarate[UE_index]);
+                }
+            }
+        }
+    }
+
 
 }
 
@@ -455,11 +512,11 @@ double roundNumber(double oriNum, int bits = 1) {
 
 void check_indoor_user(std::vector<MyUeNode> &my_UE_list,
                        std::vector<int> &indoor_user_index){
-    /*indoor_user_index.clear();
-    for(int i = 0 ; i < UE_num_max ; i++){
+    indoor_user_index.clear();
+    for(int i = 0 ; i < UE_num ; i++){
         Vector pos = my_UE_list[i].getPosition();
-        if(pos.x <= room_size / 2 && pos.x >= -room_size / 2 && pos.y <= room_size / 2 && pos.y >= -room_size / 2){
+        if(pos.x <= 5.0 / 2 && pos.x >= - 5.0 / 2 && pos.y <= 5.0 / 2 && pos.y >= -5.0 / 2){
             indoor_user_index.push_back(i);
         }
-    }*/
+    }
 }

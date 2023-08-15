@@ -62,13 +62,14 @@ void installVlcApMobility(NodeContainer &VLC_AP_nodes) {
     MobilityHelper VLC_AP_mobility;
     Ptr<ListPositionAllocator> VLC_AP_pos_list = CreateObject<ListPositionAllocator>();
 
-    double delta = room_size / VLC_AP_per_row; // 5/2
+    double set_room_size = (SUPER_DYNAMIC)? 5.0:room_size;
+    double delta = set_room_size / VLC_AP_per_row; // 5/2
     for (int i = 0; i < VLC_AP_num; i++) {
         double x = (i%VLC_AP_per_row + 1) * delta;
         double y = (i/VLC_AP_per_row + 1) * delta;
         // change origin from left-down to the center
-        x -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
-        y -= room_size / 2 + (room_size/VLC_AP_per_row)/2;
+        x -= set_room_size / 2 + (set_room_size/VLC_AP_per_row)/2;
+        y -= set_room_size / 2 + (set_room_size/VLC_AP_per_row)/2;
         VLC_AP_pos_list->Add(Vector(x, y, VLC_AP_height));
     }
 
@@ -90,32 +91,36 @@ void installUeMobility(NodeContainer &UE_nodes) {
     MobilityHelper UE_mobility_dynamic;
 
     // set 3D position allocator for random waypoints
-    ObjectFactory pos;
-    pos.SetTypeId("ns3::RandomBoxPositionAllocator");
+    ObjectFactory pos_static;
+    ObjectFactory pos_dynamic;
+    pos_static.SetTypeId("ns3::RandomBoxPositionAllocator");
+    pos_dynamic.SetTypeId("ns3::RandomBoxPositionAllocator");
 
-    std::stringstream ssPos;
-    if(SUPER_DYNAMIC){
-        ssPos << "ns3::UniformRandomVariable[Min=" << -room_size << "|Max=" << room_size << "]";
-    }
-    else{
-        ssPos << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
-    }
-    // set an attribute to be set during construction
-    pos.Set("X", StringValue(ssPos.str()));
-    pos.Set("Y", StringValue(ssPos.str()));
-    pos.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    Ptr<PositionAllocator> position_allocator = (pos.Create())->GetObject<PositionAllocator>();
-    UE_mobility_static.SetPositionAllocator(position_allocator);
-    UE_mobility_dynamic.SetPositionAllocator(position_allocator);
+    std::stringstream ssPos_static;
+    std::stringstream ssPos_dynamic;
+    ssPos_static << "ns3::UniformRandomVariable[Min=" << -5.0 / 2 << "|Max=" << 5.0 / 2 << "]";
+    ssPos_dynamic << "ns3::UniformRandomVariable[Min=" << -room_size / 2 << "|Max=" << room_size / 2 << "]";
+
+    // set an attribute to be set during construction - static
+    pos_static.Set("X",StringValue(ssPos_static.str()));
+    pos_static.Set("Y",StringValue(ssPos_static.str()));
+    pos_static.Set("Z",StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    Ptr<PositionAllocator> position_allocator_static = (pos_static.Create())->GetObject<PositionAllocator>();
+    UE_mobility_static.SetPositionAllocator(position_allocator_static);
+
+    // set an attribute to be set during construction - dynamic
+    pos_dynamic.Set("X", StringValue(ssPos_dynamic.str()));
+    pos_dynamic.Set("Y", StringValue(ssPos_dynamic.str()));
+    pos_dynamic.Set("Z", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    Ptr<PositionAllocator> position_allocator_dynamic = (pos_dynamic.Create())->GetObject<PositionAllocator>();
+    UE_mobility_dynamic.SetPositionAllocator(position_allocator_dynamic);
+
 
     /* static environment */
     UE_mobility_static.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-    //UE_mobility_static.Install(UE_nodes);
-
 
 
     /* dynamic environment */
-
     // - the random variable for user speed
     std::stringstream ss_speed;
     ss_speed << "ns3::UniformRandomVariable[Min=" << 0 << "|Max=" << avg_speed * 2 << "]";
@@ -127,9 +132,7 @@ void installUeMobility(NodeContainer &UE_nodes) {
     UE_mobility_dynamic.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
                               "Speed", StringValue(ss_speed.str()),
                               "Pause", StringValue(ss_pause.str()),
-                              "PositionAllocator", PointerValue(position_allocator));
-    //UE_mobility_dynamic.Install(UE_nodes);
-
+                              "PositionAllocator", PointerValue(position_allocator_dynamic));
 
 
     if(PROPOSED_METHOD){

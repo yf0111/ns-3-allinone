@@ -46,7 +46,8 @@ void benchmarkMethod(int &state,
                      std::vector<MyUeNode> &my_UE_list,
                      std::vector<double> &UE_final_data_rate_vector,
                      std::vector<double> &UE_final_satisfaction_vector,
-                     std::vector<double> &UE_require_data_rate)
+                     std::vector<double> &UE_require_data_rate,
+                     std::vector<int> &indoor_user_index)
 {
     precalculation(RF_AP_node,VLC_AP_nodes, UE_nodes,
                    VLC_LOS_matrix, VLC_SINR_matrix, VLC_data_rate_matrix,
@@ -56,14 +57,14 @@ void benchmarkMethod(int &state,
     /*
         ref'2 , LA-SINR
     */
-    LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate);
+    LA_SINR(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
 #endif // LASINR
 
 #if LAEQOS
     /*
         ref'2 , LA-EQOS
     */
-    LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate);
+    LA_EQOS(AP_association_matrix,RF_SINR_vector,VLC_SINR_matrix,UE_final_data_rate_vector,my_UE_list,UE_final_satisfaction_vector,UE_require_data_rate,indoor_user_index);
 
 #endif // LAEQOS
 
@@ -75,7 +76,8 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<double> &UE_final_satisfaction_vector,
-             std::vector<double> &UE_require_data_rate)
+             std::vector<double> &UE_require_data_rate,
+             std::vector<int> &indoor_user_index)
 {
 
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
@@ -185,22 +187,45 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
 
 /*  LASINR  */
 
+    check_indoor_user(my_UE_list,indoor_user_index);
     // step 1 : AP association using stand alone WiFi formula (9) and stand alone LiFi formula (11)
-    for(int i = 0 ; i < UE_num ; i++){
-        local_AP_association_matrix[0][i] = 1 ;
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            local_AP_association_matrix[0][indoor_user_index[index]] = 1;
+        }
+    }
+    else{
+        for(int i = 0 ; i < UE_num ; i++){
+            local_AP_association_matrix[0][i] = 1 ;
+        }
     }
 
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        int max_AP_index = 0;
-        double max_AP_SINR_value = -DBL_MAX;
-        for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
-            if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
-                max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
-                max_AP_index = VLC_AP_index+1;
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            int max_AP_index = 0;
+            double max_AP_SINR_value = -DBL_MAX;
+            for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                if(VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]] > max_AP_SINR_value){
+                    max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]];
+                    max_AP_index = VLC_AP_index+1;
+                }
             }
         }
-        local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            int max_AP_index = 0;
+            double max_AP_SINR_value = -DBL_MAX;
+            for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
+                    max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+                    max_AP_index = VLC_AP_index+1;
+                }
+            }
+            local_AP_association_matrix[max_AP_index][UE_index] = 1;
+        }
+    }
+
 
     // step 1.5 : calculate the numbers of users served by the AP
     std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
@@ -247,14 +272,27 @@ void LA_SINR(std::vector<std::vector<int>> &AP_association_matrix,
     cal_US_Latency(US_latency,UE_final_data_rate_vector);
     cal_US_DataRate(UE_final_data_rate_vector,UE_require_data_rate,US_datarate,US_latency,US_reliability,my_UE_list);
 
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
-            UE_final_satisfaction_vector[UE_index] = 0;
-        }
-        else{
-            UE_final_satisfaction_vector[UE_index] = US_datarate[UE_index];
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            if(UE_final_data_rate_vector[indoor_user_index[index]] < UE_require_data_rate[indoor_user_index[index]]){
+                UE_final_satisfaction_vector[indoor_user_index[index]] = 0;
+            }
+            else{
+                UE_final_satisfaction_vector[indoor_user_index[index]] = US_datarate[indoor_user_index[index]];
+            }
         }
     }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            if(UE_final_data_rate_vector[UE_index] < UE_require_data_rate[UE_index]){
+                UE_final_satisfaction_vector[UE_index] = 0;
+            }
+            else{
+                UE_final_satisfaction_vector[UE_index] = US_datarate[UE_index];
+            }
+        }
+    }
+
 }
 
 
@@ -264,28 +302,45 @@ void LA_EQOS(std::vector<std::vector<int>> &AP_association_matrix,
              std::vector<double> &UE_final_data_rate_vector,
              std::vector<MyUeNode> &my_UE_list,
              std::vector<double> &UE_final_satisfaction_vector,
-             std::vector<double> &UE_require_data_rate)
+             std::vector<double> &UE_require_data_rate,
+             std::vector<int> &indoor_user_index)
 {
+
+    check_indoor_user(my_UE_list,indoor_user_index);
     std::vector<std::vector<int>> local_AP_association_matrix = AP_association_matrix;
     UE_require_data_rate = createUEDemandVector(my_UE_list);
 
     // step 1 : AP association using stand LiFi formula (11)
-
-    for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
-        int max_AP_index = 0;
-        double max_AP_SINR_value = -DBL_MAX;
-        for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
-            if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
-                max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
-                max_AP_index = VLC_AP_index+1;
+    if(SUPER_DYNAMIC){
+        for(int index = 0 ; index < indoor_user_index.size() ; index++){
+            int max_AP_index = 0;
+            double max_AP_SINR_value = -DBL_MAX;
+            for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                if(VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]] > max_AP_SINR_value){
+                    max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][indoor_user_index[index]];
+                    max_AP_index = VLC_AP_index+1;
+                }
             }
+            local_AP_association_matrix[max_AP_index][indoor_user_index[index]] = 1;
         }
-        local_AP_association_matrix[max_AP_index][UE_index] = 1;
     }
+    else{
+        for(int UE_index = 0 ; UE_index < UE_num ; UE_index++){
+            int max_AP_index = 0;
+            double max_AP_SINR_value = -DBL_MAX;
+            for(int VLC_AP_index = 0 ; VLC_AP_index < VLC_AP_num ; VLC_AP_index++){
+                if(VLC_SINR_matrix[VLC_AP_index][UE_index] > max_AP_SINR_value){
+                    max_AP_SINR_value = VLC_SINR_matrix[VLC_AP_index][UE_index];
+                    max_AP_index = VLC_AP_index+1;
+                }
+            }
+            local_AP_association_matrix[max_AP_index][UE_index] = 1;
+        }
+    }
+
 
     // step 1.5 : calculate the numbers of users served by the AP
     std::vector<int> AP_serve_UE_numbers(RF_AP_num+VLC_AP_num,0); // AP_serve_UE_numbers[0] is RF AP
-
     for(int i = 0 ; i < RF_AP_num+VLC_AP_num ; i++){
         int served_UE_number = 0;
         for(int j = 0 ; j < UE_num ; j++){
